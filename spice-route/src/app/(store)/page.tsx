@@ -1,0 +1,132 @@
+import type { Metadata } from 'next'
+import { createClient } from '@/lib/supabase/server'
+import { ProductCard } from '@/components/product/ProductCard'
+import { HeroBanner } from '@/components/layout/HeroBanner'
+import { CategoryGrid } from '@/components/layout/CategoryGrid'
+import { FestivalBanner } from '@/components/layout/FestivalBanner'
+import Link from 'next/link'
+
+export const metadata: Metadata = {
+  title: 'Spice Route – Authentic Indian Groceries in Europe',
+}
+
+export const revalidate = 3600 // ISR every hour
+
+async function getFeaturedProducts() {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from('products')
+    .select(`
+      *,
+      images:product_images(url, is_primary),
+      variants:product_variants(id, name, price_eur, compare_at_price_eur),
+      inventory(quantity)
+    `)
+    .eq('is_active', true)
+    .eq('is_featured', true)
+    .limit(8)
+
+  return data ?? []
+}
+
+async function getDeals() {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from('product_variants')
+    .select(`
+      *,
+      product:products(*, images:product_images(url, is_primary), inventory(quantity))
+    `)
+    .not('compare_at_price_eur', 'is', null)
+    .eq('is_active', true)
+    .limit(4)
+
+  return data ?? []
+}
+
+export default async function HomePage() {
+  const [featured, deals] = await Promise.all([getFeaturedProducts(), getDeals()])
+
+  const featuredProducts = featured.map((p: any) => ({
+    ...p,
+    primary_image: p.images?.find((i: any) => i.is_primary)?.url ?? p.images?.[0]?.url,
+    min_price: Math.min(...(p.variants?.map((v: any) => v.price_eur) ?? [0])),
+    stock: p.inventory?.quantity ?? 0,
+  }))
+
+  const dealProducts = deals.map((v: any) => ({
+    ...v.product,
+    primary_image: v.product?.images?.find((i: any) => i.is_primary)?.url ?? v.product?.images?.[0]?.url,
+    min_price: v.price_eur,
+    stock: v.product?.inventory?.quantity ?? 0,
+    variants: [v],
+  }))
+
+  return (
+    <>
+      <HeroBanner />
+      <FestivalBanner />
+
+      <div className="max-w-7xl mx-auto px-4 py-12 space-y-16">
+        {/* Categories */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold">Shop by Category</h2>
+          </div>
+          <CategoryGrid />
+        </section>
+
+        {/* Featured Products */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold">Featured Products</h2>
+            <Link href="/products" className="text-saffron-600 hover:underline font-medium text-sm">
+              View all →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {featuredProducts.map((product: any) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </section>
+
+        {/* Deals Section */}
+        {dealProducts.length > 0 && (
+          <section className="bg-gradient-to-r from-saffron-50 to-turmeric-50 rounded-3xl p-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold">Today's Deals 🔥</h2>
+                <p className="text-muted-foreground text-sm">Limited time offers on top products</p>
+              </div>
+              <Link href="/deals" className="text-saffron-600 hover:underline font-medium text-sm">
+                View all deals →
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {dealProducts.map((product: any) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* USPs */}
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {[
+            { icon: '🚚', title: 'Free Delivery', desc: 'On orders over €50' },
+            { icon: '🌶️', title: 'Authentic Brands', desc: 'MDH, Heera, TRS & more' },
+            { icon: '🔒', title: 'Secure Checkout', desc: 'iDEAL, SEPA, Stripe' },
+            { icon: '↩️', title: '14-Day Returns', desc: 'Hassle-free returns' },
+          ].map((usp) => (
+            <div key={usp.title} className="text-center p-4">
+              <div className="text-4xl mb-2">{usp.icon}</div>
+              <h3 className="font-semibold text-sm">{usp.title}</h3>
+              <p className="text-xs text-muted-foreground mt-1">{usp.desc}</p>
+            </div>
+          ))}
+        </section>
+      </div>
+    </>
+  )
+}

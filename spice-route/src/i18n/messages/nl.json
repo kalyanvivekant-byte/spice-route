@@ -1,0 +1,89 @@
+{
+  "nav": {
+    "home": "Home",
+    "shop": "Winkel",
+    "deals": "Aanbiedingen",
+    "account": "Account",
+    "cart": "Winkelwagen",
+    "search": "Zoek producten...",
+    "login": "Inloggen",
+    "logout": "Uitloggen",
+    "admin": "Admin"
+  },
+  "home": {
+    "hero_title": "Authentieke Indiase Boodschappen",
+    "hero_subtitle": "Vers thuisbezorgd in heel Europa",
+    "hero_cta": "Shop Nu",
+    "featured": "Uitgelichte Producten",
+    "categories": "Shop per Categorie",
+    "deals": "Deals van Vandaag",
+    "new_arrivals": "Nieuw Binnen"
+  },
+  "product": {
+    "add_to_cart": "In Winkelwagen",
+    "out_of_stock": "Niet op voorraad",
+    "in_stock": "Op voorraad",
+    "low_stock": "Nog maar {count}",
+    "reviews": "{count} beoordelingen",
+    "country_of_origin": "Land van herkomst",
+    "weight": "Gewicht",
+    "allergens": "Allergenen",
+    "nutritional_info": "Voedingswaarden",
+    "description": "Beschrijving",
+    "write_review": "Schrijf een beoordeling",
+    "similar_products": "Misschien ook interessant"
+  },
+  "cart": {
+    "title": "Winkelwagen",
+    "empty": "Uw winkelwagen is leeg",
+    "checkout": "Afrekenen",
+    "continue_shopping": "Verder winkelen",
+    "subtotal": "Subtotaal",
+    "items": "{count} artikelen"
+  },
+  "checkout": {
+    "title": "Afrekenen",
+    "delivery": "Bezorging",
+    "payment": "Betaling",
+    "review": "Bestelling bekijken",
+    "place_order": "Bestelling plaatsen",
+    "delivery_address": "Bezorgadres",
+    "delivery_slot": "Bezorgmoment",
+    "promo_code": "Kortingscode",
+    "apply": "Toepassen",
+    "order_summary": "Overzicht",
+    "subtotal": "Subtotaal",
+    "delivery_fee": "Bezorgkosten",
+    "discount": "Korting",
+    "vat": "BTW ({rate}%)",
+    "total": "Totaal"
+  },
+  "auth": {
+    "login": "Inloggen",
+    "register": "Account aanmaken",
+    "email": "E-mail",
+    "password": "Wachtwoord",
+    "forgot_password": "Wachtwoord vergeten?",
+    "google_login": "Doorgaan met Google",
+    "no_account": "Nog geen account?",
+    "have_account": "Al een account?"
+  },
+  "account": {
+    "orders": "Mijn Bestellingen",
+    "profile": "Profiel",
+    "addresses": "Adressen",
+    "wishlist": "Verlanglijst",
+    "loyalty": "Spaarpunten",
+    "settings": "Instellingen"
+  },
+  "footer": {
+    "about": "Over Ons",
+    "contact": "Contact",
+    "privacy": "Privacybeleid",
+    "cookies": "Cookiebeleid",
+    "terms": "Algemene Voorwaarden",
+    "returns": "Retour & Terugbetaling",
+    "vat": "BTW-nr.",
+    "rights": "Alle rechten voorbehouden"
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "nav": {
+    "home": "Home",
+    "shop": "Shop",
+    "deals": "Deals",
+    "account": "Account",
+    "cart": "Cart",
+    "search": "Search products...",
+    "login": "Login",
+    "logout": "Logout",
+    "admin": "Admin"
+  },
+  "home": {
+    "hero_title": "Authentic Indian Groceries",
+    "hero_subtitle": "Delivered fresh to your door across Europe",
+    "hero_cta": "Shop Now",
+    "featured": "Featured Products",
+    "categories": "Shop by Category",
+    "deals": "Today's Deals",
+    "new_arrivals": "New Arrivals"
+  },
+  "product": {
+    "add_to_cart": "Add to Cart",
+    "out_of_stock": "Out of Stock",
+    "in_stock": "In Stock",
+    "low_stock": "Only {count} left",
+    "reviews": "{count} reviews",
+    "country_of_origin": "Country of Origin",
+    "weight": "Weight",
+    "allergens": "Allergens",
+    "nutritional_info": "Nutritional Information",
+    "description": "Description",
+    "write_review": "Write a Review",
+    "similar_products": "You may also like"
+  },
+  "cart": {
+    "title": "Your Cart",
+    "empty": "Your cart is empty",
+    "checkout": "Checkout",
+    "continue_shopping": "Continue Shopping",
+    "subtotal": "Subtotal",
+    "items": "{count} items"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "delivery": "Delivery",
+    "payment": "Payment",
+    "review": "Review Order",
+    "place_order": "Place Order",
+    "delivery_address": "Delivery Address",
+    "delivery_slot": "Delivery Slot",
+    "promo_code": "Promo Code",
+    "apply": "Apply",
+    "order_summary": "Order Summary",
+    "subtotal": "Subtotal",
+    "delivery_fee": "Delivery Fee",
+    "discount": "Discount",
+    "vat": "VAT ({rate}%)",
+    "total": "Total"
+  },
+  "auth": {
+    "login": "Sign In",
+    "register": "Create Account",
+    "email": "Email",
+    "password": "Password",
+    "forgot_password": "Forgot password?",
+    "google_login": "Continue with Google",
+    "no_account": "Don't have an account?",
+    "have_account": "Already have an account?"
+  },
+  "account": {
+    "orders": "My Orders",
+    "profile": "Profile",
+    "addresses": "Addresses",
+    "wishlist": "Wishlist",
+    "loyalty": "Loyalty Points",
+    "settings": "Settings"
+  },
+  "footer": {
+    "about": "About Us",
+    "contact": "Contact",
+    "privacy": "Privacy Policy",
+    "cookies": "Cookie Policy",
+    "terms": "Terms & Conditions",
+    "returns": "Returns & Refunds",
+    "vat": "VAT No.",
+    "rights": "All rights reserved"
+  }
+}
