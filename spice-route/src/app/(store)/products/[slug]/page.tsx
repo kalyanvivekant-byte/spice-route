@@ -37,7 +37,7 @@ export default async function ProductDetailPage({ params }: Props) {
     .select(`
       *,
       category:categories(id, name, slug),
-      images:product_images(*, ),
+      images:product_images(url, alt_text, is_primary),
       variants:product_variants(*, inventory(*)),
       reviews(*, user:profiles(full_name, avatar_url))
     `)
@@ -47,11 +47,13 @@ export default async function ProductDetailPage({ params }: Props) {
 
   if (!product) notFound()
 
+  const productAny = product as any
+
   // Related products
   const { data: related } = await supabase
     .from('products')
     .select('*, images:product_images(url, is_primary), variants:product_variants(price_eur), inventory(quantity)')
-    .eq('category_id', product.category_id)
+    .eq('category_id', productAny.category_id)
     .eq('is_active', true)
     .neq('id', product.id)
     .limit(4)
