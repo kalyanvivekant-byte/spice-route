@@ -27,7 +27,7 @@ export function BarcodeScanner({ onDetected, onClose }: Props) {
     async function start() {
       try {
         // Prefer the rear camera on phones.
-        const devices = await BrowserMultiFormatReader.listVideoInputDevices()
+        const devices = await reader.listVideoInputDevices()
         const rear =
           devices.find((d) => /back|rear|environment/i.test(d.label))?.deviceId ??
           devices[devices.length - 1]?.deviceId ??
