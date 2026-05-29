@@ -23,3 +23,6 @@ yarn-error.log*
 # env
 .env
 .env*.local
+
+# generated lockfile (regenerate locally with npm install)
+package-lock.json
