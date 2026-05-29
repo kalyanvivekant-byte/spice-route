@@ -1,15 +1,64 @@
 import { createAdminClient } from '@/lib/supabase/server'
+import { stripe } from '@/lib/stripe/client'
 import { formatCurrency } from '@/lib/vat'
+import { sendOrderConfirmation, sendNewOrderAlert } from '@/lib/email/resend'
 import Link from 'next/link'
 import { CheckCircle } from 'lucide-react'
 
 export default async function ConfirmationPage({ params }: { params: { orderId: string } }) {
   const supabase = createAdminClient()
-  const { data: order } = await supabase
+  let { data: order } = await supabase
     .from('orders')
     .select('*, items:order_items(*)')
     .eq('id', params.orderId)
     .single()
+
+  // Fallback fulfilment: if the order exists but is still pending, the Stripe
+  // webhook may not have run yet (or isn't configured). Verify the payment
+  // directly and finalise the order here. The conditional status update means
+  // only one of (webhook, this page) can transition it, so we never double-run.
+  if (order && order.status === 'pending_payment' && order.stripe_payment_intent_id) {
+    try {
+      const pi = await stripe.paymentIntents.retrieve(order.stripe_payment_intent_id)
+      if (pi.status === 'succeeded') {
+        const { data: updated } = await supabase
+          .from('orders')
+          .update({ status: 'received', payment_method: pi.payment_method_types[0] })
+          .eq('id', order.id)
+          .eq('status', 'pending_payment')
+          .select('*, items:order_items(*)')
+          .single()
+
+        if (updated) {
+          // We won the transition — run the side effects once.
+          if (updated.delivery_slot_id) {
+            await supabase.rpc('book_delivery_slot', { p_slot_id: updated.delivery_slot_id }).then(() => {}, () => {})
+          }
+          for (const item of updated.items ?? []) {
+            await supabase
+              .rpc('decrement_inventory', { p_variant_id: item.variant_id, p_qty: item.quantity })
+              .then(() => {}, () => {})
+          }
+          const email =
+            updated.guest_email ??
+            (await supabase.from('profiles').select('email').eq('id', updated.user_id).single()).data?.email
+          if (email) await sendOrderConfirmation(updated, email).catch(() => {})
+          await sendNewOrderAlert(updated).catch(() => {})
+          order = updated
+        } else {
+          // Someone else (the webhook) finalised it — re-read the current row.
+          const { data: fresh } = await supabase
+            .from('orders')
+            .select('*, items:order_items(*)')
+            .eq('id', order.id)
+            .single()
+          order = fresh
+        }
+      }
+    } catch {
+      // Ignore — fall through to the "not found / pending" message below.
+    }
+  }
 
   if (!order || order.status === 'pending_payment') {
     return (
