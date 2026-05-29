@@ -146,6 +146,15 @@ export function Navbar() {
         <nav className="hidden md:block border-t bg-white">
           <div className="max-w-7xl mx-auto px-4">
             <ul className="flex gap-6 overflow-x-auto py-2 text-sm">
+              <li className="shrink-0">
+                <Link
+                  href="/products"
+                  className="flex items-center gap-1 font-semibold text-saffron-600 hover:text-saffron-700 transition-colors whitespace-nowrap"
+                >
+                  <span>🛍️</span>
+                  All Products
+                </Link>
+              </li>
               {categories.map((cat) => (
                 <li key={cat.slug} className="shrink-0">
                   <Link
@@ -171,6 +180,14 @@ export function Navbar() {
         {/* Mobile menu */}
         {mobileOpen && (
           <div className="md:hidden border-t bg-white px-4 py-3 space-y-1">
+            <Link
+              href="/products"
+              className="flex items-center gap-2 py-2 text-sm font-semibold text-saffron-600 hover:text-saffron-700"
+              onClick={() => setMobileOpen(false)}
+            >
+              <span>🛍️</span>
+              All Products
+            </Link>
             {categories.map((cat) => (
               <Link
                 key={cat.slug}

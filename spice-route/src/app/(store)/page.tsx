@@ -84,7 +84,7 @@ export default async function HomePage() {
               <span className="eyebrow">Handpicked</span>
               <h2 className="mt-2 text-3xl font-extrabold">Featured <span className="text-gradient-spice">Products</span></h2>
             </div>
-            <Link href="/categories/flours-grains" className="text-saffron-600 hover:text-saffron-700 font-semibold text-sm shrink-0">
+            <Link href="/products" className="text-saffron-600 hover:text-saffron-700 font-semibold text-sm shrink-0">
               View all →
             </Link>
           </div>
