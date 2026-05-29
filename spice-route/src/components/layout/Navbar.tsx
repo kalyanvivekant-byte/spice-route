@@ -142,8 +142,8 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Category nav — horizontal scrolling pill strip, always visible */}
-        <nav className="border-t bg-white">
+        {/* Category nav — pill strip, desktop only (mobile uses the menu) */}
+        <nav className="hidden md:block border-t bg-white">
           <div className="max-w-7xl mx-auto px-4">
             <ul className="flex flex-wrap gap-2 py-2.5 text-sm">
               <li className="shrink-0">
