@@ -1,14 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, X } from 'lucide-react'
+import { Plus, X, Search, ImageIcon, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { GROCERY_ITEMS } from '@/data/indian-grocery-items'
 
 interface Category {
   id: string
   name: string
+}
+
+interface PhotoResult {
+  url: string
+  label: string
 }
 
 const slugify = (s: string) =>
@@ -19,17 +25,19 @@ export function AddProductForm({ categories }: { categories: Category[] }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  // searchable name picker
+  const [query, setQuery] = useState('')
+  const [showList, setShowList] = useState(false)
+  const pickerRef = useRef<HTMLDivElement>(null)
+
+  // photo lookup
+  const [photos, setPhotos] = useState<PhotoResult[]>([])
+  const [photoLoading, setPhotoLoading] = useState(false)
+
   const [f, setF] = useState({
-    name: '',
-    brand: '',
-    category_id: '',
-    variant_name: '1 unit',
-    sku: '',
-    price: '',
-    quantity: '0',
-    threshold: '10',
-    image_url: '',
-    is_active: true,
+    name: '', brand: '', category_id: '', variant_name: '1 unit', sku: '',
+    price: '', quantity: '0', threshold: '10', image_url: '', is_active: true,
   })
 
   function set(k: keyof typeof f, v: any) {
@@ -37,10 +45,64 @@ export function AddProductForm({ categories }: { categories: Category[] }) {
   }
 
   function reset() {
-    setF({
-      name: '', brand: '', category_id: '', variant_name: '1 unit', sku: '',
-      price: '', quantity: '0', threshold: '10', image_url: '', is_active: true,
-    })
+    setF({ name: '', brand: '', category_id: '', variant_name: '1 unit', sku: '', price: '', quantity: '0', threshold: '10', image_url: '', is_active: true })
+    setQuery('')
+    setPhotos([])
+  }
+
+  // close dropdown on outside click
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setShowList(false)
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [])
+
+  const matches = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return GROCERY_ITEMS.slice(0, 30)
+    return GROCERY_ITEMS.filter(
+      (i) => i.name.toLowerCase().includes(q) || (i.brand ?? '').toLowerCase().includes(q) || i.category.toLowerCase().includes(q)
+    ).slice(0, 40)
+  }, [query])
+
+  function pick(item: (typeof GROCERY_ITEMS)[number]) {
+    set('name', item.name)
+    if (item.brand) set('brand', item.brand)
+    // try to match the suggested category to one of the store's categories
+    const match = categories.find((c) => c.name.toLowerCase().includes(item.category.toLowerCase().split(' ')[0]))
+    if (match) set('category_id', match.id)
+    setQuery(item.name)
+    setShowList(false)
+  }
+
+  async function findPhotos() {
+    const term = (f.name || query).trim()
+    if (!term) return toast.error('Enter or pick a product name first')
+    setPhotoLoading(true)
+    setPhotos([])
+    try {
+      const searchTerm = f.brand ? `${f.brand} ${term}` : term
+      const url =
+        'https://world.openfoodfacts.org/cgi/search.pl?search_simple=1&action=process&json=1&page_size=12' +
+        '&fields=product_name,brands,image_front_small_url,image_small_url' +
+        '&search_terms=' + encodeURIComponent(searchTerm)
+      const res = await fetch(url)
+      const data = await res.json()
+      const results: PhotoResult[] = (data.products ?? [])
+        .map((p: any) => ({
+          url: p.image_front_small_url || p.image_small_url || '',
+          label: [p.brands, p.product_name].filter(Boolean).join(' · '),
+        }))
+        .filter((p: PhotoResult) => p.url)
+      if (results.length === 0) toast('No photos found — try a simpler name or paste a URL', { icon: '🔍' })
+      setPhotos(results.slice(0, 8))
+    } catch {
+      toast.error('Photo lookup failed — you can paste an image URL instead')
+    } finally {
+      setPhotoLoading(false)
+    }
   }
 
   async function submit() {
@@ -53,7 +115,6 @@ export function AddProductForm({ categories }: { categories: Category[] }) {
 
     setSaving(true)
 
-    // 1. Product
     const { data: product, error: pErr } = await supabase
       .from('products')
       .insert({
@@ -63,40 +124,26 @@ export function AddProductForm({ categories }: { categories: Category[] }) {
         category_id: f.category_id || null,
         is_active: f.is_active,
       })
-      .select('id')
-      .single()
+      .select('id').single()
     if (pErr || !product) { toast.error(pErr?.message ?? 'Failed to create product'); setSaving(false); return }
 
-    // 2. Variant
     const { data: variant, error: vErr } = await supabase
       .from('product_variants')
-      .insert({
-        product_id: product.id,
-        name: f.variant_name.trim() || 'Default',
-        sku,
-        price_eur: price,
-        is_active: true,
-      })
-      .select('id')
-      .single()
+      .insert({ product_id: product.id, name: f.variant_name.trim() || 'Default', sku, price_eur: price, is_active: true })
+      .select('id').single()
     if (vErr || !variant) {
       toast.error(vErr?.message ?? 'Failed to create variant')
-      await supabase.from('products').delete().eq('id', product.id) // rollback
-      setSaving(false)
-      return
+      await supabase.from('products').delete().eq('id', product.id)
+      setSaving(false); return
     }
 
-    // 3. Inventory
     const { error: iErr } = await supabase
       .from('inventory')
       .insert({ variant_id: variant.id, quantity, low_stock_threshold: threshold })
     if (iErr) { toast.error(`Product created, but stock row failed: ${iErr.message}`); setSaving(false); return }
 
-    // 4. Optional image
     if (f.image_url.trim()) {
-      await supabase.from('product_images').insert({
-        product_id: product.id, url: f.image_url.trim(), is_primary: true,
-      })
+      await supabase.from('product_images').insert({ product_id: product.id, url: f.image_url.trim(), is_primary: true })
     }
 
     toast.success(`${f.name} created`)
@@ -106,16 +153,13 @@ export function AddProductForm({ categories }: { categories: Category[] }) {
     router.refresh()
   }
 
-  const inp =
-    'w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-saffron-500'
+  const inp = 'w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-saffron-500'
 
   if (!open) {
     return (
       <div className="mb-6">
-        <button
-          onClick={() => setOpen(true)}
-          className="flex items-center gap-1 text-sm bg-saffron-500 hover:bg-saffron-600 text-white px-4 py-2 rounded-lg transition"
-        >
+        <button onClick={() => setOpen(true)}
+          className="flex items-center gap-1 text-sm bg-saffron-500 hover:bg-saffron-600 text-white px-4 py-2 rounded-lg transition">
           <Plus className="h-4 w-4" /> Add new product
         </button>
       </div>
@@ -126,46 +170,86 @@ export function AddProductForm({ categories }: { categories: Category[] }) {
     <div className="mb-6 bg-gray-900 rounded-xl p-5">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-semibold">New product</h2>
-        <button onClick={() => setOpen(false)} className="text-gray-500 hover:text-white transition">
-          <X className="h-5 w-5" />
-        </button>
+        <button onClick={() => setOpen(false)} className="text-gray-500 hover:text-white transition"><X className="h-5 w-5" /></button>
+      </div>
+
+      {/* Searchable name picker */}
+      <div ref={pickerRef} className="relative mb-4">
+        <label className="text-xs text-gray-400">Product name * <span className="text-gray-600">— search the Indian grocery list or type your own</span></label>
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+          <input
+            className={`${inp} pl-8`}
+            value={query}
+            placeholder="e.g. Toor Dal, MDH Garam Masala, Basmati Rice…"
+            onChange={(e) => { setQuery(e.target.value); set('name', e.target.value); setShowList(true) }}
+            onFocus={() => setShowList(true)}
+          />
+        </div>
+        {showList && matches.length > 0 && (
+          <div className="absolute z-20 mt-1 w-full max-h-72 overflow-auto bg-gray-800 border border-gray-700 rounded-lg shadow-xl">
+            {matches.map((item) => (
+              <button
+                key={`${item.name}-${item.brand ?? ''}`}
+                type="button"
+                onClick={() => pick(item)}
+                className="w-full text-left px-3 py-2 hover:bg-gray-700 transition flex items-center justify-between gap-2"
+              >
+                <span className="text-sm text-white">{item.name}</span>
+                <span className="text-[11px] text-gray-500 shrink-0">{item.brand ? `${item.brand} · ` : ''}{item.category}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <label className="text-xs text-gray-400">Name *
-          <input className={inp} value={f.name} onChange={(e) => set('name', e.target.value)} />
-        </label>
         <label className="text-xs text-gray-400">Brand
-          <input className={inp} value={f.brand} onChange={(e) => set('brand', e.target.value)} />
-        </label>
+          <input className={inp} value={f.brand} onChange={(e) => set('brand', e.target.value)} /></label>
         <label className="text-xs text-gray-400">Category
           <select className={inp} value={f.category_id} onChange={(e) => set('category_id', e.target.value)}>
             <option value="">— none —</option>
             {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </label>
+          </select></label>
         <label className="text-xs text-gray-400">Variant / size
-          <input className={inp} value={f.variant_name} placeholder="e.g. 1kg, 500g" onChange={(e) => set('variant_name', e.target.value)} />
-        </label>
+          <input className={inp} value={f.variant_name} placeholder="e.g. 1kg, 500g" onChange={(e) => set('variant_name', e.target.value)} /></label>
         <label className="text-xs text-gray-400">SKU <span className="text-gray-600">(auto if blank)</span>
-          <input className={inp} value={f.sku} onChange={(e) => set('sku', e.target.value)} />
-        </label>
+          <input className={inp} value={f.sku} onChange={(e) => set('sku', e.target.value)} /></label>
         <label className="text-xs text-gray-400">Price € *
-          <input className={inp} type="number" min={0} step="0.01" value={f.price} onChange={(e) => set('price', e.target.value)} />
-        </label>
+          <input className={inp} type="number" min={0} step="0.01" value={f.price} onChange={(e) => set('price', e.target.value)} /></label>
         <label className="text-xs text-gray-400">Initial stock
-          <input className={inp} type="number" min={0} value={f.quantity} onChange={(e) => set('quantity', e.target.value)} />
-        </label>
+          <input className={inp} type="number" min={0} value={f.quantity} onChange={(e) => set('quantity', e.target.value)} /></label>
         <label className="text-xs text-gray-400">Low-stock threshold
-          <input className={inp} type="number" min={0} value={f.threshold} onChange={(e) => set('threshold', e.target.value)} />
-        </label>
-        <label className="text-xs text-gray-400">Image URL
-          <input className={inp} value={f.image_url} placeholder="https://…" onChange={(e) => set('image_url', e.target.value)} />
-        </label>
+          <input className={inp} type="number" min={0} value={f.threshold} onChange={(e) => set('threshold', e.target.value)} /></label>
         <label className="text-xs text-gray-400 flex items-center gap-2 pt-5">
-          <input type="checkbox" checked={f.is_active} onChange={(e) => set('is_active', e.target.checked)} />
-          Active (show on store)
+          <input type="checkbox" checked={f.is_active} onChange={(e) => set('is_active', e.target.checked)} /> Active (show on store)
         </label>
+      </div>
+
+      {/* Photo */}
+      <div className="mt-4">
+        <div className="flex items-end gap-2">
+          <label className="text-xs text-gray-400 flex-1">Image URL
+            <input className={inp} value={f.image_url} placeholder="https://… or use Find photo" onChange={(e) => set('image_url', e.target.value)} /></label>
+          <button type="button" onClick={findPhotos} disabled={photoLoading}
+            className="flex items-center gap-1 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-white px-3 py-2 rounded-lg transition shrink-0">
+            {photoLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />} Find photo
+          </button>
+        </div>
+        {photos.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {photos.map((p) => (
+              <button key={p.url} type="button" onClick={() => set('image_url', p.url)} title={p.label}
+                className={`h-16 w-16 rounded border overflow-hidden ${f.image_url === p.url ? 'border-saffron-500 ring-2 ring-saffron-500' : 'border-gray-700 hover:border-gray-500'}`}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.url} alt={p.label} className="h-full w-full object-cover" />
+              </button>
+            ))}
+          </div>
+        )}
+        {f.image_url && (
+          <p className="text-[11px] text-green-400 mt-2 truncate">Selected image: {f.image_url}</p>
+        )}
       </div>
 
       <div className="flex items-center gap-3 mt-5">
@@ -173,9 +257,7 @@ export function AddProductForm({ categories }: { categories: Category[] }) {
           className="flex items-center gap-1 text-sm bg-saffron-500 hover:bg-saffron-600 disabled:opacity-40 text-white px-4 py-2 rounded-lg transition">
           <Plus className="h-4 w-4" />{saving ? 'Creating…' : 'Create product'}
         </button>
-        <button onClick={() => { reset(); setOpen(false) }} className="text-sm text-gray-400 hover:text-white transition">
-          Cancel
-        </button>
+        <button onClick={() => { reset(); setOpen(false) }} className="text-sm text-gray-400 hover:text-white transition">Cancel</button>
       </div>
     </div>
   )
