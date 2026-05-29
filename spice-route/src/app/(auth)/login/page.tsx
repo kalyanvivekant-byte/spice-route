@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import toast from 'react-hot-toast'
@@ -12,7 +11,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
-  const router = useRouter()
 
   function getRedirect() {
     if (typeof window === 'undefined') return '/'
@@ -25,11 +23,13 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       toast.error(error.message)
+      setLoading(false)
     } else {
-      router.push(getRedirect())
-      router.refresh()
+      // Full-page navigation so the server reliably sees the new auth cookie
+      // (a client-side router.push can render the destination before the
+      // session cookie is visible server-side, causing a bounce back to login).
+      window.location.assign(getRedirect())
     }
-    setLoading(false)
   }
 
   async function handleGoogle() {

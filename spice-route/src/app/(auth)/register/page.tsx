@@ -25,7 +25,7 @@ function RegisterForm() {
       password,
       options: {
         data: { full_name: fullName, referral_code: ref },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: `${window.location.origin}/api/auth/callback`,
       },
     })
     if (error) {
