@@ -142,14 +142,14 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Category nav */}
-        <nav className="hidden md:block border-t bg-white">
+        {/* Category nav — horizontal scrolling pill strip, always visible */}
+        <nav className="border-t bg-white">
           <div className="max-w-7xl mx-auto px-4">
-            <ul className="flex gap-6 overflow-x-auto py-2 text-sm">
+            <ul className="flex gap-2 overflow-x-auto py-2.5 text-sm scrollbar-hide">
               <li className="shrink-0">
                 <Link
                   href="/products"
-                  className="flex items-center gap-1 font-semibold text-saffron-600 hover:text-saffron-700 transition-colors whitespace-nowrap"
+                  className="flex items-center gap-1.5 rounded-full bg-gradient-spice text-white px-3.5 py-1.5 font-semibold whitespace-nowrap shadow-sm hover:opacity-90 transition"
                 >
                   <span>🛍️</span>
                   All Products
@@ -159,7 +159,7 @@ export function Navbar() {
                 <li key={cat.slug} className="shrink-0">
                   <Link
                     href={`/categories/${cat.slug}`}
-                    className="flex items-center gap-1 text-gray-600 hover:text-saffron-600 transition-colors whitespace-nowrap"
+                    className="flex items-center gap-1.5 rounded-full border border-saffron-100 bg-white px-3.5 py-1.5 text-gray-600 whitespace-nowrap hover:border-saffron-300 hover:text-saffron-700 hover:bg-saffron-50 transition-colors"
                   >
                     <span>{cat.icon}</span>
                     {cat.name}
