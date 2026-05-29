@@ -31,7 +31,7 @@ function variantHasInv(v: Variant) {
 
 export function ProductCatalog({ products }: { products: Product[] }) {
   const supabase = createClient()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
   const [rows, setRows] = useState<Row[]>(() =>
     products.map((p) => ({
       ...p,
