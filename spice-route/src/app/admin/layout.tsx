@@ -2,13 +2,12 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import {
-  LayoutDashboard, Package, ShoppingBag, BarChart2, Truck, Users, Settings, Warehouse, Building2,
+  LayoutDashboard, ShoppingBag, BarChart2, Truck, Users, Settings, Warehouse, Building2,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingBag },
-  { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/inventory', label: 'Inventory', icon: Warehouse },
   { href: '/admin/suppliers', label: 'Suppliers', icon: Building2 },
   { href: '/admin/delivery', label: 'Delivery', icon: Truck },

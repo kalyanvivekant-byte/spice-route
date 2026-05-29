@@ -1,11 +1,12 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { InventoryTable } from './InventoryTable'
 import { ProductCatalog } from './ProductCatalog'
+import { AddProductForm } from './AddProductForm'
 
 export default async function AdminInventoryPage() {
   const supabase = createAdminClient()
 
-  const [{ data: items }, { data: products }] = await Promise.all([
+  const [{ data: items }, { data: products }, { data: categories }] = await Promise.all([
     supabase
       .from('inventory')
       .select(`
@@ -24,11 +25,13 @@ export default async function AdminInventoryPage() {
       `)
       .order('name', { ascending: true })
       .limit(500),
+    supabase.from('categories').select('id, name').order('name'),
   ])
 
   return (
     <>
       <div className="px-6 pt-6">
+        <AddProductForm categories={(categories as any) ?? []} />
         <ProductCatalog products={(products as any) ?? []} />
       </div>
       <InventoryTable items={(items as any) ?? []} />
