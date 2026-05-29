@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast'
 import { ReactQueryProvider } from '@/components/shared/ReactQueryProvider'
 import { CookieConsentBanner } from '@/components/shared/CookieConsentBanner'
 import { ServiceWorkerRegister } from '@/components/shared/ServiceWorkerRegister'
+import { InstallPrompt } from '@/components/shared/InstallPrompt'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 const poppins = Poppins({
@@ -53,6 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Toaster position="top-right" />
           <CookieConsentBanner />
           <ServiceWorkerRegister />
+          <InstallPrompt />
         </ReactQueryProvider>
       </body>
     </html>
