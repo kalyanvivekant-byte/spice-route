@@ -4,6 +4,7 @@ import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import { ReactQueryProvider } from '@/components/shared/ReactQueryProvider'
 import { CookieConsentBanner } from '@/components/shared/CookieConsentBanner'
+import { Analytics } from '@vercel/analytics/next'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Toaster position="top-right" />
           <CookieConsentBanner />
         </ReactQueryProvider>
+        <Analytics />
       </body>
     </html>
   )
