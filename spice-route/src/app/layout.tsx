@@ -1,9 +1,10 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter, Poppins } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import { ReactQueryProvider } from '@/components/shared/ReactQueryProvider'
 import { CookieConsentBanner } from '@/components/shared/CookieConsentBanner'
+import { ServiceWorkerRegister } from '@/components/shared/ServiceWorkerRegister'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 const poppins = Poppins({
@@ -24,6 +25,23 @@ export const metadata: Metadata = {
     siteName: 'Spice Route',
   },
   robots: { index: true, follow: true },
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Spice Route',
+  },
+  icons: {
+    icon: '/icons/icon-192.png',
+    apple: '/icons/apple-touch-icon.png',
+  },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#f97316',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -34,6 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
           <Toaster position="top-right" />
           <CookieConsentBanner />
+          <ServiceWorkerRegister />
         </ReactQueryProvider>
       </body>
     </html>
