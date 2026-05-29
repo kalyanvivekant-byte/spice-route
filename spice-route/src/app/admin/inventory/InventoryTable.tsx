@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { formatCurrency } from '@/lib/vat'
 import { Check } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -23,6 +22,8 @@ export function InventoryTable({ items }: { items: Item[] }) {
       ...i,
       _qty: String(i.quantity),
       _threshold: String(i.low_stock_threshold),
+      _price: i.variant?.price_eur != null ? String(i.variant.price_eur) : '',
+      _cost: i.cost_price_eur != null ? String(i.cost_price_eur) : '',
       _saving: false,
     }))
   )
@@ -39,18 +40,44 @@ export function InventoryTable({ items }: { items: Item[] }) {
     if (Number.isNaN(quantity) || quantity < 0) return toast.error('Enter a valid quantity')
     if (Number.isNaN(threshold) || threshold < 0) return toast.error('Enter a valid threshold')
 
+    const price = row._price === '' ? null : Number(row._price)
+    if (price != null && (Number.isNaN(price) || price < 0)) return toast.error('Enter a valid price')
+    const cost = row._cost === '' ? null : Number(row._cost)
+    if (cost != null && (Number.isNaN(cost) || cost < 0)) return toast.error('Enter a valid cost')
+
     update(id, { _saving: true })
+
     const { error } = await supabase
       .from('inventory')
-      .update({ quantity, low_stock_threshold: threshold, updated_at: new Date().toISOString() })
+      .update({ quantity, low_stock_threshold: threshold, cost_price_eur: cost, updated_at: new Date().toISOString() })
       .eq('id', id)
     if (error) {
       toast.error(error.message)
       update(id, { _saving: false })
       return
     }
-    update(id, { quantity, low_stock_threshold: threshold, _saving: false })
-    toast.success('Stock updated')
+
+    // Selling price lives on the product variant
+    if (price != null && row.variant?.id) {
+      const { error: pErr } = await supabase
+        .from('product_variants')
+        .update({ price_eur: price })
+        .eq('id', row.variant.id)
+      if (pErr) {
+        toast.error(`Stock saved, but price failed: ${pErr.message}`)
+        update(id, { _saving: false })
+        return
+      }
+    }
+
+    update(id, {
+      quantity,
+      low_stock_threshold: threshold,
+      cost_price_eur: cost,
+      variant: { ...row.variant, price_eur: price ?? row.variant?.price_eur },
+      _saving: false,
+    })
+    toast.success('Saved')
   }
 
   const lowCount = rows.filter((r) => r.quantity <= (r.low_stock_threshold ?? 10)).length
@@ -73,7 +100,8 @@ export function InventoryTable({ items }: { items: Item[] }) {
               <th className="text-left p-4">Supplier</th>
               <th className="text-left p-4">Stock</th>
               <th className="text-left p-4">Threshold</th>
-              <th className="text-left p-4">Cost</th>
+              <th className="text-left p-4">Price €</th>
+              <th className="text-left p-4">Cost €</th>
               <th className="text-left p-4">Expiry</th>
               <th className="text-left p-4"></th>
             </tr>
@@ -82,7 +110,10 @@ export function InventoryTable({ items }: { items: Item[] }) {
             {rows.map((r) => {
               const low = r.quantity <= (r.low_stock_threshold ?? 10)
               const dirty =
-                r._qty !== String(r.quantity) || r._threshold !== String(r.low_stock_threshold)
+                r._qty !== String(r.quantity) ||
+                r._threshold !== String(r.low_stock_threshold) ||
+                r._price !== (r.variant?.price_eur != null ? String(r.variant.price_eur) : '') ||
+                r._cost !== (r.cost_price_eur != null ? String(r.cost_price_eur) : '')
               return (
                 <tr key={r.id} className="hover:bg-gray-800/50 transition">
                   <td className="p-4 text-white">
@@ -109,8 +140,27 @@ export function InventoryTable({ items }: { items: Item[] }) {
                       className={inputCls}
                     />
                   </td>
-                  <td className="p-4 text-gray-400">
-                    {r.cost_price_eur != null ? formatCurrency(r.cost_price_eur) : '–'}
+                  <td className="p-4">
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={r._price}
+                      placeholder="–"
+                      onChange={(e) => update(r.id, { _price: e.target.value })}
+                      className={inputCls}
+                    />
+                  </td>
+                  <td className="p-4">
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={r._cost}
+                      placeholder="–"
+                      onChange={(e) => update(r.id, { _cost: e.target.value })}
+                      className={inputCls}
+                    />
                   </td>
                   <td className="p-4 text-gray-400 text-xs">{r.expiry_date ?? '–'}</td>
                   <td className="p-4">
