@@ -1,13 +1,20 @@
 import twilio from 'twilio'
 
-const client = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-)
+function getClient() {
+  const sid = process.env.TWILIO_ACCOUNT_SID
+  const token = process.env.TWILIO_AUTH_TOKEN
+  if (!sid || !sid.startsWith('AC') || !token) return null
+  return twilio(sid, token)
+}
 
 const FROM = process.env.TWILIO_PHONE_NUMBER!
 
 export async function sendSMS(to: string, message: string) {
+  const client = getClient()
+  if (!client) {
+    console.warn('SMS: Twilio not configured, skipping')
+    return
+  }
   if (!to.startsWith('+')) {
     console.warn('SMS: phone number must be in E.164 format')
     return
