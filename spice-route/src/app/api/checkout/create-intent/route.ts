@@ -40,6 +40,14 @@ export async function POST(request: NextRequest) {
     const deliveryFee = isExpress ? 9.99 : 4.99
     const totals = calculateOrderTotals(cartItems, deliveryFee, 0, deliveryData.countryCode)
 
+    // delivery_slot_id is a UUID column. The checkout currently uses demo slot
+    // ids ("slot-1"…"slot-4"), which aren't UUIDs, so only persist a real UUID.
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    const slotId =
+      typeof deliveryData.slotId === 'string' && UUID_RE.test(deliveryData.slotId)
+        ? deliveryData.slotId
+        : null
+
     // Create Stripe PaymentIntent.
     // Use automatic_payment_methods so Stripe offers whatever methods are
     // enabled in the Dashboard, instead of hard-coding types that may not be
@@ -73,7 +81,7 @@ export async function POST(request: NextRequest) {
           country_code: deliveryData.countryCode,
           phone: deliveryData.phone,
         } : null,
-        delivery_slot_id: deliveryData.slotId ?? null,
+        delivery_slot_id: slotId,
         country_code: deliveryData.countryCode,
         stripe_payment_intent_id: paymentIntent.id,
         subtotal_eur: totals.subtotal,
