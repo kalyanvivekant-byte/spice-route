@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { MapPin, Clock } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 const schema = z.object({
   firstName: z.string().min(1, 'Required'),
@@ -31,7 +32,14 @@ const COUNTRIES = [
   { code: 'BE', name: 'Belgium' },
 ]
 
-const DEMO_SLOTS = [
+interface Slot {
+  id: string
+  label: string
+  date: string
+  isExpress: boolean
+}
+
+const DEMO_SLOTS: Slot[] = [
   { id: 'slot-1', label: 'Morning (8:00 – 10:00)', date: 'Tomorrow', isExpress: false },
   { id: 'slot-2', label: 'Afternoon (12:00 – 14:00)', date: 'Tomorrow', isExpress: false },
   { id: 'slot-3', label: 'Evening (18:00 – 20:00)', date: 'Tomorrow', isExpress: false },
@@ -40,10 +48,36 @@ const DEMO_SLOTS = [
 
 interface Props {
   user: any
-  onComplete: (data: FormData) => void
+  onComplete: (data: FormData & { isExpress: boolean; slotLabel?: string }) => void
 }
 
 export function DeliveryStep({ user, onComplete }: Props) {
+  const [slots, setSlots] = useState<Slot[]>(DEMO_SLOTS)
+
+  useEffect(() => {
+    const supabase = createClient()
+    const today = new Date().toISOString().slice(0, 10)
+    supabase
+      .from('delivery_slots')
+      .select('id, slot_label, date, is_express')
+      .gte('date', today)
+      .order('date', { ascending: true })
+      .order('start_time', { ascending: true })
+      .limit(20)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setSlots(
+            data.map((s: any) => ({
+              id: s.id,
+              label: s.slot_label,
+              date: s.date,
+              isExpress: !!s.is_express,
+            }))
+          )
+        }
+      })
+  }, [])
+
   const { register, handleSubmit, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -55,8 +89,13 @@ export function DeliveryStep({ user, onComplete }: Props) {
 
   const deliveryType = watch('deliveryType')
 
+  function submit(data: FormData) {
+    const selected = slots.find((s) => s.id === data.slotId)
+    onComplete({ ...data, isExpress: selected?.isExpress ?? false, slotLabel: selected?.label })
+  }
+
   return (
-    <form onSubmit={handleSubmit(onComplete)} className="space-y-6">
+    <form onSubmit={handleSubmit(submit)} className="space-y-6">
       {/* Delivery type */}
       <div>
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
@@ -149,7 +188,7 @@ export function DeliveryStep({ user, onComplete }: Props) {
           Delivery Slot
         </h2>
         <div className="space-y-2">
-          {DEMO_SLOTS.map((slot) => (
+          {slots.map((slot) => (
             <label key={slot.id} className="flex items-center gap-3 border rounded-xl p-3 cursor-pointer hover:border-saffron-300 transition">
               <input type="radio" value={slot.id} {...register('slotId')} className="text-saffron-500" />
               <div className="flex-1">

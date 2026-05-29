@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       return { price: variant.price_eur, quantity: item.quantity }
     })
 
-    const isExpress = deliveryData.slotId?.includes('slot-4')
+    const isExpress = deliveryData.isExpress ?? deliveryData.slotId?.includes('slot-4')
     const deliveryFee = isExpress ? 9.99 : 4.99
     const totals = calculateOrderTotals(cartItems, deliveryFee, 0, deliveryData.countryCode)
 
