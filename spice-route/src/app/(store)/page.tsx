@@ -19,8 +19,7 @@ async function getFeaturedProducts() {
     .select(`
       *,
       images:product_images(url, is_primary),
-      variants:product_variants(id, name, price_eur, compare_at_price_eur),
-      inventory(quantity)
+      variants:product_variants(id, name, price_eur, compare_at_price_eur, inventory(quantity))
     `)
     .eq('is_active', true)
     .eq('is_featured', true)
@@ -35,7 +34,8 @@ async function getDeals() {
     .from('product_variants')
     .select(`
       *,
-      product:products(*, images:product_images(url, is_primary), inventory(quantity))
+      inventory(quantity),
+      product:products(*, images:product_images(url, is_primary))
     `)
     .not('compare_at_price_eur', 'is', null)
     .eq('is_active', true)
@@ -51,14 +51,14 @@ export default async function HomePage() {
     ...p,
     primary_image: p.images?.find((i: any) => i.is_primary)?.url ?? p.images?.[0]?.url,
     min_price: Math.min(...(p.variants?.map((v: any) => v.price_eur) ?? [0])),
-    stock: p.inventory?.quantity ?? 0,
+    stock: (p.variants ?? []).reduce((s: number, v: any) => s + (v.inventory?.quantity ?? 0), 0),
   }))
 
   const dealProducts = deals.map((v: any) => ({
     ...v.product,
     primary_image: v.product?.images?.find((i: any) => i.is_primary)?.url ?? v.product?.images?.[0]?.url,
     min_price: v.price_eur,
-    stock: v.product?.inventory?.quantity ?? 0,
+    stock: v.inventory?.quantity ?? 0,
     variants: [v],
   }))
 

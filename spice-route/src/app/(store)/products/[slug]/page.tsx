@@ -52,7 +52,7 @@ export default async function ProductDetailPage({ params }: Props) {
   // Related products
   const { data: related } = await supabase
     .from('products')
-    .select('*, images:product_images(url, is_primary), variants:product_variants(price_eur), inventory(quantity)')
+    .select('*, images:product_images(url, is_primary), variants:product_variants(price_eur, inventory(quantity))')
     .eq('category_id', productAny.category_id)
     .eq('is_active', true)
     .neq('id', product.id)
@@ -62,7 +62,7 @@ export default async function ProductDetailPage({ params }: Props) {
     ...p,
     primary_image: p.images?.find((i: any) => i.is_primary)?.url ?? p.images?.[0]?.url,
     min_price: Math.min(...(p.variants?.map((v: any) => v.price_eur) ?? [0])),
-    stock: p.inventory?.quantity ?? 0,
+    stock: (p.variants ?? []).reduce((s: number, v: any) => s + (v.inventory?.quantity ?? 0), 0),
   }))
 
   // Structured data

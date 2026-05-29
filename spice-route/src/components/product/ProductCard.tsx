@@ -40,7 +40,7 @@ export function ProductCard({ product }: ProductCardProps) {
       quantity: 1,
       imageUrl: image ?? null,
       slug: product.slug,
-      maxQuantity: product.inventory?.quantity ?? 10,
+      maxQuantity: variant?.inventory?.quantity ?? product.stock ?? 10,
     })
     toast.success(`${product.name} added to cart!`)
   }
