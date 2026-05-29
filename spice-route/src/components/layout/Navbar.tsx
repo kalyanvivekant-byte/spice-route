@@ -41,16 +41,16 @@ export function Navbar() {
     <>
       <header className="sticky-header border-b">
         {/* Top bar */}
-        <div className="bg-saffron-600 text-white text-xs py-1.5 text-center">
-          🚚 Free delivery on orders over €50 · Serving Netherlands, Germany, France & Belgium
+        <div className="bg-gradient-spice text-white text-xs py-1.5 text-center font-medium tracking-wide">
+          🚚 Free delivery on orders over €50 · Serving Netherlands, Germany, France &amp; Belgium
         </div>
 
         {/* Main nav */}
         <div className="max-w-7xl mx-auto px-4 flex items-center gap-4 h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl shrink-0">
+          <Link href="/" className="flex items-center gap-2 font-display font-extrabold text-xl shrink-0">
             <span className="text-2xl">🌶️</span>
-            <span className="text-saffron-600">Spice Route</span>
+            <span className="text-gradient-spice">Spice Route</span>
           </Link>
 
           {/* Search */}

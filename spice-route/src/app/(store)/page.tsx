@@ -70,17 +70,21 @@ export default async function HomePage() {
       <div className="max-w-7xl mx-auto px-4 py-12 space-y-16">
         {/* Categories */}
         <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">Shop by Category</h2>
+          <div className="mb-6">
+            <span className="eyebrow">Browse</span>
+            <h2 className="mt-2 text-3xl font-extrabold">Shop by <span className="text-gradient-spice">Category</span></h2>
           </div>
           <CategoryGrid />
         </section>
 
         {/* Featured Products */}
         <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">Featured Products</h2>
-            <Link href="/categories/flours-grains" className="text-saffron-600 hover:underline font-medium text-sm">
+          <div className="flex items-end justify-between mb-6">
+            <div>
+              <span className="eyebrow">Handpicked</span>
+              <h2 className="mt-2 text-3xl font-extrabold">Featured <span className="text-gradient-spice">Products</span></h2>
+            </div>
+            <Link href="/categories/flours-grains" className="text-saffron-600 hover:text-saffron-700 font-semibold text-sm shrink-0">
               View all →
             </Link>
           </div>
@@ -93,13 +97,15 @@ export default async function HomePage() {
 
         {/* Deals Section */}
         {dealProducts.length > 0 && (
-          <section className="bg-gradient-to-r from-saffron-50 to-turmeric-50 rounded-3xl p-8">
-            <div className="flex items-center justify-between mb-6">
+          <section className="section-soft rounded-3xl p-8 relative overflow-hidden">
+            <div className="absolute -top-16 -right-16 h-56 w-56 rounded-full bg-saffron-200/40 blur-3xl" aria-hidden />
+            <div className="relative flex items-end justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-bold">Today's Deals 🔥</h2>
-                <p className="text-muted-foreground text-sm">Limited time offers on top products</p>
+                <span className="eyebrow">🔥 Limited time</span>
+                <h2 className="mt-2 text-3xl font-extrabold">Today&apos;s <span className="text-gradient-spice">Deals</span></h2>
+                <p className="text-muted-foreground text-sm mt-1">Limited time offers on top products</p>
               </div>
-              <Link href="/categories/spices" className="text-saffron-600 hover:underline font-medium text-sm">
+              <Link href="/deals" className="text-saffron-600 hover:text-saffron-700 font-semibold text-sm shrink-0">
                 View all deals →
               </Link>
             </div>
@@ -112,16 +118,16 @@ export default async function HomePage() {
         )}
 
         {/* USPs */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { icon: '🚚', title: 'Free Delivery', desc: 'On orders over €50' },
             { icon: '🌶️', title: 'Authentic Brands', desc: 'MDH, Heera, TRS & more' },
             { icon: '🔒', title: 'Secure Checkout', desc: 'iDEAL, SEPA, Stripe' },
             { icon: '↩️', title: '14-Day Returns', desc: 'Hassle-free returns' },
           ].map((usp) => (
-            <div key={usp.title} className="text-center p-4">
+            <div key={usp.title} className="card-lift text-center p-5 bg-white rounded-2xl border border-saffron-100/70 shadow-sm">
               <div className="text-4xl mb-2">{usp.icon}</div>
-              <h3 className="font-semibold text-sm">{usp.title}</h3>
+              <h3 className="font-display font-bold text-sm">{usp.title}</h3>
               <p className="text-xs text-muted-foreground mt-1">{usp.desc}</p>
             </div>
           ))}

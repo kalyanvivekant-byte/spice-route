@@ -47,9 +47,9 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Link href={`/products/${product.slug}`} className="group">
-      <div className="bg-white rounded-2xl overflow-hidden border hover:shadow-lg transition-shadow duration-200">
+      <div className="card-lift bg-white rounded-2xl overflow-hidden border border-saffron-100/70 shadow-sm h-full flex flex-col">
         {/* Image */}
-        <div className="relative aspect-square bg-muted overflow-hidden">
+        <div className="relative aspect-square bg-gradient-to-br from-amber-50 to-saffron-50 overflow-hidden">
           {image ? (
             <Image
               src={image}
@@ -65,12 +65,12 @@ export function ProductCard({ product }: ProductCardProps) {
           {/* Badges */}
           <div className="absolute top-2 left-2 flex flex-col gap-1">
             {product.is_featured && (
-              <span className="bg-saffron-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
-                Featured
+              <span className="bg-gradient-turmeric text-white text-xs font-semibold px-2 py-0.5 rounded-full shadow-sm">
+                ★ Featured
               </span>
             )}
             {hasDiscount && (
-              <span className="bg-green-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
+              <span className="bg-gradient-spice text-white text-xs font-semibold px-2 py-0.5 rounded-full shadow-sm">
                 Sale
               </span>
             )}
@@ -110,7 +110,7 @@ export function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* Info */}
-        <div className="p-3">
+        <div className="p-3 flex flex-col flex-1">
           {product.brand && (
             <p className="text-xs text-muted-foreground mb-0.5">{product.brand}</p>
           )}
@@ -125,11 +125,11 @@ export function ProductCard({ product }: ProductCardProps) {
             </div>
           )}
 
-          <div className="flex items-center justify-between mt-2">
-            <div>
-              <span className="font-bold text-saffron-600">{formatCurrency(price)}</span>
+          <div className="flex items-center justify-between mt-auto pt-2">
+            <div className="flex items-baseline gap-1">
+              <span className="font-display font-bold text-lg text-gradient-spice">{formatCurrency(price)}</span>
               {hasDiscount && variant?.compare_at_price_eur && (
-                <span className="text-xs text-muted-foreground line-through ml-1">
+                <span className="text-xs text-muted-foreground line-through">
                   {formatCurrency(variant.compare_at_price_eur)}
                 </span>
               )}
@@ -137,7 +137,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
             <Button
               size="sm"
-              className="h-8 w-8 p-0 rounded-full"
+              className="h-9 w-9 p-0 rounded-full bg-gradient-spice hover:opacity-90 shadow-md shadow-saffron-500/30 transition disabled:shadow-none"
               disabled={!inStock}
               onClick={handleAddToCart}
             >

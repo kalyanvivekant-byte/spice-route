@@ -51,7 +51,16 @@
 
 @layer base {
   * { @apply border-border; }
-  body { @apply bg-background text-foreground; }
+  body {
+    @apply text-foreground;
+    /* Warm, subtle spice-toned page background */
+    background-color: #fffaf3;
+    background-image:
+      radial-gradient(60rem 60rem at 110% -10%, rgba(255, 157, 55, 0.12), transparent 60%),
+      radial-gradient(50rem 50rem at -10% 0%, rgba(234, 179, 8, 0.10), transparent 55%);
+    background-attachment: fixed;
+  }
+  h1, h2, h3, h4, .font-display { font-family: var(--font-display); letter-spacing: -0.01em; }
 }
 
 /* Shimmer skeleton */
@@ -65,5 +74,55 @@
   top: 0;
   z-index: 50;
   backdrop-filter: blur(12px);
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(255, 251, 245, 0.85);
+}
+
+/* ---- Warm/vibrant theme utilities ---- */
+
+/* Gradient text for headings & accents */
+.text-gradient-spice {
+  background-image: linear-gradient(90deg, #f06006 0%, #ff7d10 45%, #eab308 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Spice gradient fills for buttons/badges */
+.bg-gradient-spice {
+  background-image: linear-gradient(135deg, #ff7d10 0%, #f06006 55%, #c74607 100%);
+}
+.bg-gradient-turmeric {
+  background-image: linear-gradient(135deg, #facc15 0%, #ff9d37 100%);
+}
+
+/* Card hover lift */
+.card-lift {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.card-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px -16px rgba(199, 70, 7, 0.35);
+}
+
+/* Decorative dotted pattern (for hero/section backgrounds) */
+.pattern-dots {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.25) 1.5px, transparent 1.5px);
+  background-size: 22px 22px;
+}
+
+/* Soft section card */
+.section-soft {
+  background-image: linear-gradient(135deg, #fff8ed 0%, #fefce8 100%);
+  border: 1px solid rgba(255, 157, 55, 0.18);
+}
+
+/* Floating animation for hero emoji */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+
+/* Eyebrow pill above section titles */
+.eyebrow {
+  @apply inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-saffron-700 bg-saffron-100 px-3 py-1 rounded-full;
 }
