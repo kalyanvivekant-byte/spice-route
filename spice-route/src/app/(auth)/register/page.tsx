@@ -1,13 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import toast from 'react-hot-toast'
 
-export default function RegisterPage() {
+function RegisterForm() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -15,7 +15,7 @@ export default function RegisterPage() {
   const supabase = createClient()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const ref = searchParams.get('ref') // referral code
+  const ref = searchParams.get('ref')
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
@@ -105,5 +105,13 @@ export default function RegisterPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
   )
 }
