@@ -9,9 +9,13 @@ interface Props {
 }
 
 export async function generateStaticParams() {
-  const supabase = createClient()
+  const { createClient: createSupabase } = await import('@supabase/supabase-js')
+  const supabase = createSupabase(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
   const { data } = await supabase.from('categories').select('slug').eq('is_active', true)
-  return (data ?? []).map((c) => ({ slug: c.slug }))
+  return (data ?? []).map((c: any) => ({ slug: c.slug }))
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
