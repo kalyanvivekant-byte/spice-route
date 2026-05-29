@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe, getStripePaymentMethods } from '@/lib/stripe/client'
+import { stripe } from '@/lib/stripe/client'
 import { createAdminClient } from '@/lib/supabase/server'
 import { calculateOrderTotals } from '@/lib/vat'
 
@@ -40,12 +40,14 @@ export async function POST(request: NextRequest) {
     const deliveryFee = isExpress ? 9.99 : 4.99
     const totals = calculateOrderTotals(cartItems, deliveryFee, 0, deliveryData.countryCode)
 
-    // Create Stripe PaymentIntent
-    const paymentMethods = getStripePaymentMethods(deliveryData.countryCode)
+    // Create Stripe PaymentIntent.
+    // Use automatic_payment_methods so Stripe offers whatever methods are
+    // enabled in the Dashboard, instead of hard-coding types that may not be
+    // activated (which makes the PaymentIntent creation fail).
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(totals.total * 100), // cents
       currency: 'eur',
-      payment_method_types: paymentMethods,
+      automatic_payment_methods: { enabled: true },
       metadata: {
         userId: userId ?? 'guest',
         countryCode: deliveryData.countryCode,
