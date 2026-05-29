@@ -1,8 +1,12 @@
 import { Resend } from 'resend'
 import type { Order } from '@/types'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = `${process.env.RESEND_FROM_NAME} <${process.env.RESEND_FROM_EMAIL}>`
+function getResend() {
+  const key = process.env.RESEND_API_KEY
+  if (!key || key === 're_placeholder') return null
+  return new Resend(key)
+}
+const FROM = `Spice Route <${process.env.RESEND_FROM_EMAIL ?? 'noreply@spiceroute.eu'}>`
 
 export async function sendOrderConfirmation(order: Order, email: string) {
   const itemsHtml = order.items
@@ -15,7 +19,7 @@ export async function sendOrderConfirmation(order: Order, email: string) {
     )
     .join('')
 
-  await resend.emails.send({
+  const resend = getResend(); if (!resend) return; await resend.emails.send({
     from: FROM,
     to: email,
     subject: `Order Confirmed – #${order.order_number}`,
@@ -52,7 +56,7 @@ export async function sendOrderConfirmation(order: Order, email: string) {
 }
 
 export async function sendOrderDispatched(order: Order, email: string, trackingUrl?: string) {
-  await resend.emails.send({
+  const resend = getResend(); if (!resend) return; await resend.emails.send({
     from: FROM,
     to: email,
     subject: `Your order #${order.order_number} is on its way!`,
@@ -72,7 +76,7 @@ export async function sendOrderDispatched(order: Order, email: string, trackingU
 }
 
 export async function sendRefundConfirmation(order: Order, email: string, amount: number) {
-  await resend.emails.send({
+  const resend = getResend(); if (!resend) return; await resend.emails.send({
     from: FROM,
     to: email,
     subject: `Refund processed for order #${order.order_number}`,
@@ -93,7 +97,7 @@ export async function sendBackInStockAlert(
   productUrl: string,
   email: string
 ) {
-  await resend.emails.send({
+  const resend = getResend(); if (!resend) return; await resend.emails.send({
     from: FROM,
     to: email,
     subject: `${productName} is back in stock!`,
