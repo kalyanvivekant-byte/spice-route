@@ -126,12 +126,3 @@
 .eyebrow {
   @apply inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-saffron-700 bg-saffron-100 px-3 py-1 rounded-full;
 }
-
-/* Hide scrollbar for horizontal category strip while keeping scroll */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}

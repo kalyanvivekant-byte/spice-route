@@ -145,7 +145,7 @@ export function Navbar() {
         {/* Category nav — horizontal scrolling pill strip, always visible */}
         <nav className="border-t bg-white">
           <div className="max-w-7xl mx-auto px-4">
-            <ul className="flex gap-2 overflow-x-auto py-2.5 text-sm scrollbar-hide">
+            <ul className="flex flex-wrap gap-2 py-2.5 text-sm">
               <li className="shrink-0">
                 <Link
                   href="/products"
