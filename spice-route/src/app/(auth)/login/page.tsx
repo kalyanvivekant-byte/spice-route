@@ -14,6 +14,11 @@ export default function LoginPage() {
   const supabase = createClient()
   const router = useRouter()
 
+  function getRedirect() {
+    if (typeof window === 'undefined') return '/'
+    return new URLSearchParams(window.location.search).get('redirect') || '/'
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -21,16 +26,17 @@ export default function LoginPage() {
     if (error) {
       toast.error(error.message)
     } else {
-      router.push('/')
+      router.push(getRedirect())
       router.refresh()
     }
     setLoading(false)
   }
 
   async function handleGoogle() {
+    const next = getRedirect()
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(next)}` },
     })
   }
 

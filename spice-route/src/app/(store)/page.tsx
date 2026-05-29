@@ -80,7 +80,7 @@ export default async function HomePage() {
         <section>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold">Featured Products</h2>
-            <Link href="/products" className="text-saffron-600 hover:underline font-medium text-sm">
+            <Link href="/categories/flours-grains" className="text-saffron-600 hover:underline font-medium text-sm">
               View all →
             </Link>
           </div>
@@ -99,7 +99,7 @@ export default async function HomePage() {
                 <h2 className="text-2xl font-bold">Today's Deals 🔥</h2>
                 <p className="text-muted-foreground text-sm">Limited time offers on top products</p>
               </div>
-              <Link href="/deals" className="text-saffron-600 hover:underline font-medium text-sm">
+              <Link href="/categories/spices" className="text-saffron-600 hover:underline font-medium text-sm">
                 View all deals →
               </Link>
             </div>
