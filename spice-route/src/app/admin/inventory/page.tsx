@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { InventoryTable } from './InventoryTable'
 import { AddProductForm } from './AddProductForm'
+import { UntrackedProducts } from './UntrackedProducts'
 
 export default async function AdminInventoryPage() {
   const supabase = createAdminClient()
@@ -31,8 +32,9 @@ export default async function AdminInventoryPage() {
     <>
       <div className="px-6 pt-6">
         <AddProductForm categories={(categories as any) ?? []} />
+        <UntrackedProducts products={(products as any) ?? []} />
       </div>
-      <InventoryTable items={(items as any) ?? []} products={(products as any) ?? []} />
+      <InventoryTable items={(items as any) ?? []} />
     </>
   )
 }

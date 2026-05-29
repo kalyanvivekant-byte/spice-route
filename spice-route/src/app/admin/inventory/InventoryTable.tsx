@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Check, Plus, Trash2, ImageIcon } from 'lucide-react'
+import { Check, Trash2, ImageIcon } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface Item {
@@ -16,44 +16,10 @@ interface Item {
   supplier: any
 }
 
-interface CatalogProduct {
-  id: string
-  name: string
-  brand: string | null
-  variants: { id: string; name: string; inventory: { id: string }[] | { id: string } | null }[]
-}
-
-function variantHasInv(v: CatalogProduct['variants'][number]) {
-  const inv = v.inventory
-  if (Array.isArray(inv)) return inv.length > 0
-  return !!inv
-}
-
-export function InventoryTable({ items, products = [] }: { items: Item[]; products?: CatalogProduct[] }) {
+export function InventoryTable({ items }: { items: Item[] }) {
   const supabase = createClient()
   const router = useRouter()
 
-  // Products with at least one variant not yet tracked in inventory
-  const addable = products
-    .map((p) => ({ ...p, _missing: (p.variants ?? []).filter((v) => !variantHasInv(v)) }))
-    .filter((p) => p._missing.length > 0)
-
-  const [addId, setAddId] = useState('')
-  const [adding, setAdding] = useState(false)
-
-  async function addToInventory() {
-    const p = addable.find((x) => x.id === addId)
-    if (!p) return toast.error('Pick a product to add')
-    setAdding(true)
-    const { error } = await supabase
-      .from('inventory')
-      .insert(p._missing.map((v) => ({ variant_id: v.id, quantity: 0, low_stock_threshold: 10 })))
-    setAdding(false)
-    if (error) return toast.error(error.message)
-    toast.success(`${p.name} added to inventory`)
-    setAddId('')
-    router.refresh()
-  }
   const [rows, setRows] = useState(() =>
     items.map((i) => {
       // The "regular" price is compare_at when on sale, otherwise the live price.
@@ -223,32 +189,7 @@ export function InventoryTable({ items, products = [] }: { items: Item[]; produc
     <div className="p-6">
       <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
         <h1 className="text-2xl font-bold">Inventory</h1>
-        <div className="flex items-center gap-3">
-          {addable.length > 0 && (
-            <div className="flex items-center gap-2">
-              <select
-                value={addId}
-                onChange={(e) => setAddId(e.target.value)}
-                className="bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-saffron-500 max-w-[220px]"
-              >
-                <option value="">Add existing product…</option>
-                {addable.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.brand ? `${p.brand} · ` : ''}{p.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={addToInventory}
-                disabled={!addId || adding}
-                className="flex items-center gap-1 text-sm bg-saffron-500 hover:bg-saffron-600 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded transition"
-              >
-                <Plus className="h-3 w-3" />{adding ? 'Adding…' : 'Add'}
-              </button>
-            </div>
-          )}
-          <span className="text-sm text-yellow-400">{lowCount} item(s) low on stock</span>
-        </div>
+        <span className="text-sm text-yellow-400">{lowCount} item(s) low on stock</span>
       </div>
 
       <div className="bg-gray-900 rounded-xl overflow-hidden">
