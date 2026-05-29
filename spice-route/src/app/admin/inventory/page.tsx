@@ -11,7 +11,7 @@ export default async function AdminInventoryPage() {
       .from('inventory')
       .select(`
         id, quantity, low_stock_threshold, cost_price_eur, expiry_date,
-        variant:product_variants(id, name, sku, price_eur, product:products(name)),
+        variant:product_variants(id, name, sku, price_eur, compare_at_price_eur, product:products(name)),
         supplier:suppliers(name)
       `)
       .order('quantity', { ascending: true })

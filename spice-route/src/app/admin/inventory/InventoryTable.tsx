@@ -18,15 +18,40 @@ interface Item {
 export function InventoryTable({ items }: { items: Item[] }) {
   const supabase = createClient()
   const [rows, setRows] = useState(() =>
-    items.map((i) => ({
-      ...i,
-      _qty: String(i.quantity),
-      _threshold: String(i.low_stock_threshold),
-      _price: i.variant?.price_eur != null ? String(i.variant.price_eur) : '',
-      _cost: i.cost_price_eur != null ? String(i.cost_price_eur) : '',
-      _saving: false,
-    }))
+    items.map((i) => {
+      // The "regular" price is compare_at when on sale, otherwise the live price.
+      const cmp = i.variant?.compare_at_price_eur
+      const live = i.variant?.price_eur
+      const regular = cmp != null && cmp > 0 ? cmp : live
+      const pct =
+        cmp != null && cmp > 0 && live != null
+          ? Math.round((1 - live / cmp) * 100)
+          : 0
+      return {
+        ...i,
+        _qty: String(i.quantity),
+        _threshold: String(i.low_stock_threshold),
+        _price: regular != null ? String(regular) : '',
+        _deal: pct > 0 ? String(pct) : '',
+        _cost: i.cost_price_eur != null ? String(i.cost_price_eur) : '',
+        _saving: false,
+      }
+    })
   )
+
+  // Derive the live (discounted) values currently stored for a row, for dirty-checking.
+  function storedRegular(r: any) {
+    const cmp = r.variant?.compare_at_price_eur
+    const live = r.variant?.price_eur
+    const reg = cmp != null && cmp > 0 ? cmp : live
+    return reg != null ? String(reg) : ''
+  }
+  function storedDeal(r: any) {
+    const cmp = r.variant?.compare_at_price_eur
+    const live = r.variant?.price_eur
+    const pct = cmp != null && cmp > 0 && live != null ? Math.round((1 - live / cmp) * 100) : 0
+    return pct > 0 ? String(pct) : ''
+  }
 
   function update(id: string, patch: Partial<(typeof rows)[number]>) {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)))
@@ -40,10 +65,21 @@ export function InventoryTable({ items }: { items: Item[] }) {
     if (Number.isNaN(quantity) || quantity < 0) return toast.error('Enter a valid quantity')
     if (Number.isNaN(threshold) || threshold < 0) return toast.error('Enter a valid threshold')
 
-    const price = row._price === '' ? null : Number(row._price)
-    if (price != null && (Number.isNaN(price) || price < 0)) return toast.error('Enter a valid price')
+    const regular = row._price === '' ? null : Number(row._price)
+    if (regular != null && (Number.isNaN(regular) || regular < 0)) return toast.error('Enter a valid price')
     const cost = row._cost === '' ? null : Number(row._cost)
     if (cost != null && (Number.isNaN(cost) || cost < 0)) return toast.error('Enter a valid cost')
+
+    const dealPct = row._deal === '' ? 0 : Number(row._deal)
+    if (Number.isNaN(dealPct) || dealPct < 0 || dealPct > 90) return toast.error('Discount must be 0–90%')
+
+    // Compute the live (charged) price and the struck-through compare price.
+    let priceEur: number | null = regular
+    let compareAt: number | null = null
+    if (regular != null && dealPct > 0) {
+      compareAt = regular
+      priceEur = Math.round(regular * (1 - dealPct / 100) * 100) / 100
+    }
 
     update(id, { _saving: true })
 
@@ -57,11 +93,11 @@ export function InventoryTable({ items }: { items: Item[] }) {
       return
     }
 
-    // Selling price lives on the product variant
-    if (price != null && row.variant?.id) {
+    // Selling price + discount live on the product variant
+    if (regular != null && row.variant?.id) {
       const { error: pErr } = await supabase
         .from('product_variants')
-        .update({ price_eur: price })
+        .update({ price_eur: priceEur, compare_at_price_eur: compareAt })
         .eq('id', row.variant.id)
       if (pErr) {
         toast.error(`Stock saved, but price failed: ${pErr.message}`)
@@ -74,10 +110,14 @@ export function InventoryTable({ items }: { items: Item[] }) {
       quantity,
       low_stock_threshold: threshold,
       cost_price_eur: cost,
-      variant: { ...row.variant, price_eur: price ?? row.variant?.price_eur },
+      variant: {
+        ...row.variant,
+        price_eur: priceEur ?? row.variant?.price_eur,
+        compare_at_price_eur: compareAt,
+      },
       _saving: false,
     })
-    toast.success('Saved')
+    toast.success(dealPct > 0 ? `Saved · ${dealPct}% deal live` : 'Saved')
   }
 
   const lowCount = rows.filter((r) => r.quantity <= (r.low_stock_threshold ?? 10)).length
@@ -101,6 +141,7 @@ export function InventoryTable({ items }: { items: Item[] }) {
               <th className="text-left p-4">Stock</th>
               <th className="text-left p-4">Threshold</th>
               <th className="text-left p-4">Price €</th>
+              <th className="text-left p-4">Deal %</th>
               <th className="text-left p-4">Cost €</th>
               <th className="text-left p-4">Expiry</th>
               <th className="text-left p-4"></th>
@@ -112,7 +153,8 @@ export function InventoryTable({ items }: { items: Item[] }) {
               const dirty =
                 r._qty !== String(r.quantity) ||
                 r._threshold !== String(r.low_stock_threshold) ||
-                r._price !== (r.variant?.price_eur != null ? String(r.variant.price_eur) : '') ||
+                r._price !== storedRegular(r) ||
+                r._deal !== storedDeal(r) ||
                 r._cost !== (r.cost_price_eur != null ? String(r.cost_price_eur) : '')
               return (
                 <tr key={r.id} className="hover:bg-gray-800/50 transition">
@@ -149,6 +191,18 @@ export function InventoryTable({ items }: { items: Item[] }) {
                       placeholder="–"
                       onChange={(e) => update(r.id, { _price: e.target.value })}
                       className={inputCls}
+                    />
+                  </td>
+                  <td className="p-4">
+                    <input
+                      type="number"
+                      min={0}
+                      max={90}
+                      step="1"
+                      value={r._deal}
+                      placeholder="0"
+                      onChange={(e) => update(r.id, { _deal: e.target.value })}
+                      className={`${inputCls} ${r._deal && Number(r._deal) > 0 ? 'border-green-600 text-green-400' : ''}`}
                     />
                   </td>
                   <td className="p-4">
