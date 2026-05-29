@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Check, Plus } from 'lucide-react'
+import { Check, Plus, Trash2, ImageIcon } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface Item {
@@ -64,6 +64,8 @@ export function InventoryTable({ items, products = [] }: { items: Item[]; produc
         cmp != null && cmp > 0 && live != null
           ? Math.round((1 - live / cmp) * 100)
           : 0
+      const imgs = i.variant?.product?.images ?? []
+      const primary = imgs.find((im: any) => im.is_primary) ?? imgs[0]
       return {
         ...i,
         _qty: String(i.quantity),
@@ -71,6 +73,10 @@ export function InventoryTable({ items, products = [] }: { items: Item[]; produc
         _price: regular != null ? String(regular) : '',
         _deal: pct > 0 ? String(pct) : '',
         _cost: i.cost_price_eur != null ? String(i.cost_price_eur) : '',
+        _img: primary?.url ?? '',
+        _editingImg: false,
+        _savingImg: false,
+        _deleting: false,
         _saving: false,
       }
     })
@@ -157,6 +163,58 @@ export function InventoryTable({ items, products = [] }: { items: Item[]; produc
     toast.success(dealPct > 0 ? `Saved · ${dealPct}% deal live` : 'Saved')
   }
 
+  async function saveImage(id: string) {
+    const row = rows.find((r) => r.id === id)
+    if (!row) return
+    const pid = row.variant?.product?.id
+    if (!pid) return toast.error('No product linked to this row')
+    const url = (row._img || '').trim()
+
+    update(id, { _savingImg: true })
+    // Replace the current primary image with the new URL (or just clear it)
+    const { error: delErr } = await supabase
+      .from('product_images')
+      .delete()
+      .eq('product_id', pid)
+      .eq('is_primary', true)
+    if (delErr) { toast.error(delErr.message); update(id, { _savingImg: false }); return }
+
+    if (url) {
+      const { error: insErr } = await supabase
+        .from('product_images')
+        .insert({ product_id: pid, url, is_primary: true })
+      if (insErr) { toast.error(insErr.message); update(id, { _savingImg: false }); return }
+    }
+    update(id, { _savingImg: false, _editingImg: false })
+    toast.success(url ? 'Photo updated' : 'Photo removed')
+  }
+
+  async function deleteProduct(id: string) {
+    const row = rows.find((r) => r.id === id)
+    if (!row) return
+    const pid = row.variant?.product?.id
+    const name = row.variant?.product?.name ?? 'this product'
+    if (!pid) return toast.error('No product linked to this row')
+    if (!confirm(`Delete "${name}" completely? This removes the product, all its variants, stock, and images. This cannot be undone.`)) return
+
+    update(id, { _deleting: true })
+    // Gather all variant ids for this product
+    const { data: variants } = await supabase.from('product_variants').select('id').eq('product_id', pid)
+    const variantIds = (variants ?? []).map((v: any) => v.id)
+
+    if (variantIds.length) {
+      await supabase.from('inventory').delete().in('variant_id', variantIds)
+    }
+    await supabase.from('product_images').delete().eq('product_id', pid)
+    await supabase.from('product_variants').delete().eq('product_id', pid)
+    const { error } = await supabase.from('products').delete().eq('id', pid)
+    if (error) { toast.error(error.message); update(id, { _deleting: false }); return }
+
+    setRows((prev) => prev.filter((r) => r.id !== id))
+    toast.success(`${name} deleted`)
+    router.refresh()
+  }
+
   const lowCount = rows.filter((r) => r.quantity <= (r.low_stock_threshold ?? 10)).length
   const inputCls =
     'w-20 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-saffron-500'
@@ -197,6 +255,7 @@ export function InventoryTable({ items, products = [] }: { items: Item[]; produc
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-800 text-gray-400 text-xs">
+              <th className="text-left p-4">Photo</th>
               <th className="text-left p-4">Product</th>
               <th className="text-left p-4">SKU</th>
               <th className="text-left p-4">Supplier</th>
@@ -219,7 +278,49 @@ export function InventoryTable({ items, products = [] }: { items: Item[]; produc
                 r._deal !== storedDeal(r) ||
                 r._cost !== (r.cost_price_eur != null ? String(r.cost_price_eur) : '')
               return (
-                <tr key={r.id} className="hover:bg-gray-800/50 transition">
+                <tr key={r.id} className="hover:bg-gray-800/50 transition align-top">
+                  <td className="p-4">
+                    {r._editingImg ? (
+                      <div className="flex flex-col gap-1 w-44">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        {r._img ? <img src={r._img} alt="" className="h-12 w-12 rounded object-cover border border-gray-700" /> : null}
+                        <input
+                          value={r._img}
+                          placeholder="Paste image URL"
+                          onChange={(e) => update(r.id, { _img: e.target.value })}
+                          className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-saffron-500"
+                        />
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => saveImage(r.id)}
+                            disabled={r._savingImg}
+                            className="text-[11px] bg-saffron-500 hover:bg-saffron-600 disabled:opacity-40 text-white px-2 py-1 rounded transition"
+                          >
+                            {r._savingImg ? 'Saving…' : 'Save'}
+                          </button>
+                          <button
+                            onClick={() => update(r.id, { _editingImg: false })}
+                            className="text-[11px] text-gray-400 hover:text-white px-2 py-1"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => update(r.id, { _editingImg: true })}
+                        title="Add or change photo"
+                        className="h-12 w-12 rounded border border-gray-700 hover:border-saffron-500 overflow-hidden flex items-center justify-center bg-gray-800 transition"
+                      >
+                        {r._img ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={r._img} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <ImageIcon className="h-4 w-4 text-gray-500" />
+                        )}
+                      </button>
+                    )}
+                  </td>
                   <td className="p-4 text-white">
                     {r.variant?.product?.name}
                     <span className="text-gray-500 text-xs"> · {r.variant?.name}</span>
@@ -280,14 +381,24 @@ export function InventoryTable({ items, products = [] }: { items: Item[]; produc
                   </td>
                   <td className="p-4 text-gray-400 text-xs">{r.expiry_date ?? '–'}</td>
                   <td className="p-4">
-                    <button
-                      onClick={() => save(r.id)}
-                      disabled={!dirty || r._saving}
-                      className="flex items-center gap-1 text-xs bg-saffron-500 hover:bg-saffron-600 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded transition"
-                    >
-                      <Check className="h-3 w-3" />
-                      {r._saving ? 'Saving…' : 'Save'}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => save(r.id)}
+                        disabled={!dirty || r._saving}
+                        className="flex items-center gap-1 text-xs bg-saffron-500 hover:bg-saffron-600 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded transition"
+                      >
+                        <Check className="h-3 w-3" />
+                        {r._saving ? 'Saving…' : 'Save'}
+                      </button>
+                      <button
+                        onClick={() => deleteProduct(r.id)}
+                        disabled={r._deleting}
+                        title="Delete product"
+                        className="flex items-center justify-center text-xs text-red-400 hover:text-white hover:bg-red-600/80 disabled:opacity-30 px-2 py-1.5 rounded transition"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               )
