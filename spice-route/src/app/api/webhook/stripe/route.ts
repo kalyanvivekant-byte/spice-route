@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe/client'
 import { createAdminClient } from '@/lib/supabase/server'
-import { sendOrderConfirmation, sendRefundConfirmation } from '@/lib/email/resend'
+import { sendOrderConfirmation, sendRefundConfirmation, sendNewOrderAlert } from '@/lib/email/resend'
 import { notifyOrderStatus } from '@/lib/sms/twilio'
 import { awardLoyaltyPoints } from '@/lib/loyalty'
 import Stripe from 'stripe'
@@ -54,6 +54,9 @@ export async function POST(request: NextRequest) {
       if (email) {
         await sendOrderConfirmation(order, email).catch(console.error)
       }
+
+      // Notify the store owner of the new order
+      await sendNewOrderAlert(order).catch(console.error)
 
       // Award loyalty points
       if (order.user_id) {

@@ -55,6 +55,42 @@ export async function sendOrderConfirmation(order: Order, email: string) {
   })
 }
 
+export async function sendNewOrderAlert(order: Order) {
+  const to = process.env.OWNER_ALERT_EMAIL || process.env.RESEND_FROM_EMAIL
+  if (!to) return
+  const itemsHtml = order.items
+    ?.map(
+      (i) =>
+        `<tr>
+          <td style="padding:8px;border-bottom:1px solid #eee">${i.product_name} – ${i.variant_name}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${i.quantity}x €${i.unit_price_eur.toFixed(2)}</td>
+        </tr>`
+    )
+    .join('')
+
+  const resend = getResend(); if (!resend) return; await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `🔔 New order #${order.order_number} – €${order.total_eur.toFixed(2)}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+        <div style="background:#111;padding:20px;text-align:center">
+          <h1 style="color:#f97316;margin:0">New Order Received</h1>
+        </div>
+        <div style="padding:24px">
+          <p><strong>Order #${order.order_number}</strong></p>
+          <table style="width:100%;border-collapse:collapse">${itemsHtml}</table>
+          <p style="margin-top:16px;text-align:right"><strong>Total: €${order.total_eur.toFixed(2)}</strong></p>
+          <a href="${process.env.NEXT_PUBLIC_APP_URL}/admin/orders"
+             style="display:inline-block;margin-top:16px;background:#f97316;color:white;padding:12px 24px;border-radius:8px;text-decoration:none">
+            Open in Admin
+          </a>
+        </div>
+      </div>
+    `,
+  })
+}
+
 export async function sendOrderDispatched(order: Order, email: string, trackingUrl?: string) {
   const resend = getResend(); if (!resend) return; await resend.emails.send({
     from: FROM,
