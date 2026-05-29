@@ -4,11 +4,12 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  LayoutDashboard, ShoppingBag, BarChart2, Truck, Users, Settings, Warehouse, Building2, Menu, X,
+  LayoutDashboard, ShoppingBag, BarChart2, Truck, Users, Settings, Warehouse, Building2, Menu, X, ScanLine,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/pos', label: 'POS Register', icon: ScanLine },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingBag },
   { href: '/admin/inventory', label: 'Inventory', icon: Warehouse },
   { href: '/admin/suppliers', label: 'Suppliers', icon: Building2 },
