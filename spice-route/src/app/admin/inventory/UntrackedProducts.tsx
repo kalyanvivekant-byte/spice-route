@@ -80,25 +80,25 @@ export function UntrackedProducts({ products }: { products: Product[] }) {
   if (rows.length === 0) return null
 
   return (
-    <div className="mb-6 bg-gray-900 rounded-xl overflow-hidden">
+    <div className="mb-6 bg-white border border-saffron-100 shadow-sm rounded-2xl overflow-hidden">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-800/50 transition"
+        className="w-full flex items-center justify-between p-4 text-left hover:bg-saffron-50 transition"
       >
-        <span className="font-semibold">
+        <span className="font-semibold text-gray-900">
           Products not in inventory{' '}
           <span className="text-gray-400 text-sm font-normal">— {rows.length}</span>
         </span>
-        {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        {open ? <ChevronUp className="h-4 w-4 text-gray-500" /> : <ChevronDown className="h-4 w-4 text-gray-500" />}
       </button>
 
       {open && (
-        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 border-t border-gray-800">
+        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 border-t border-saffron-100">
           {rows.map((r) => {
             const img = r.images?.find((i) => i.is_primary)?.url ?? r.images?.[0]?.url
             return (
-              <div key={r.id} className="flex items-center gap-3 p-2 rounded-lg border border-gray-700">
-                <div className="relative h-12 w-12 shrink-0 rounded bg-gray-800 overflow-hidden flex items-center justify-center">
+              <div key={r.id} className="flex items-center gap-3 p-2 rounded-xl border border-saffron-200">
+                <div className="relative h-12 w-12 shrink-0 rounded-lg bg-saffron-50 overflow-hidden flex items-center justify-center">
                   {img ? (
                     <Image src={img} alt={r.name} fill className="object-cover" sizes="48px" />
                   ) : (
@@ -107,14 +107,14 @@ export function UntrackedProducts({ products }: { products: Product[] }) {
                 </div>
                 <div className="min-w-0 flex-1">
                   {r.brand && <p className="text-[11px] text-gray-500 truncate">{r.brand}</p>}
-                  <p className="text-sm text-white truncate">{r.name}</p>
-                  <p className="text-[11px] text-gray-500">{r.variants?.length ?? 0} variant(s){r.is_active ? '' : ' · inactive'}</p>
+                  <p className="text-sm text-gray-900 truncate">{r.name}</p>
+                  <p className="text-[11px] text-gray-400">{r.variants?.length ?? 0} variant(s){r.is_active ? '' : ' · inactive'}</p>
                 </div>
                 <button
                   onClick={() => add(r.id)}
                   disabled={r._busy}
                   title="Add to inventory"
-                  className="flex items-center gap-1 text-xs bg-saffron-500 hover:bg-saffron-600 disabled:opacity-40 text-white px-2 py-1.5 rounded transition shrink-0"
+                  className="flex items-center gap-1 text-xs bg-gradient-spice hover:opacity-90 disabled:opacity-40 text-white px-2 py-1.5 rounded-lg transition shrink-0"
                 >
                   <Plus className="h-3 w-3" /> Add
                 </button>
@@ -122,7 +122,7 @@ export function UntrackedProducts({ products }: { products: Product[] }) {
                   onClick={() => remove(r.id)}
                   disabled={r._busy}
                   title="Delete product"
-                  className="flex items-center justify-center text-xs text-red-400 hover:text-white hover:bg-red-600/80 disabled:opacity-40 px-2 py-1.5 rounded transition shrink-0"
+                  className="flex items-center justify-center text-xs text-red-500 hover:text-white hover:bg-red-500 disabled:opacity-40 px-2 py-1.5 rounded-lg transition shrink-0"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

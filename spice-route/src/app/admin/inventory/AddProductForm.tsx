@@ -153,13 +153,13 @@ export function AddProductForm({ categories }: { categories: Category[] }) {
     router.refresh()
   }
 
-  const inp = 'w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-saffron-500'
+  const inp = 'w-full bg-white border border-saffron-200 rounded px-2 py-1.5 text-sm text-gray-900 focus:outline-none focus:border-saffron-500'
 
   if (!open) {
     return (
       <div className="mb-6">
         <button onClick={() => setOpen(true)}
-          className="flex items-center gap-1 text-sm bg-saffron-500 hover:bg-saffron-600 text-white px-4 py-2 rounded-lg transition">
+          className="flex items-center gap-1 text-sm bg-gradient-spice hover:opacity-90 text-white px-4 py-2 rounded-lg transition">
           <Plus className="h-4 w-4" /> Add new product
         </button>
       </div>
@@ -167,17 +167,17 @@ export function AddProductForm({ categories }: { categories: Category[] }) {
   }
 
   return (
-    <div className="mb-6 bg-gray-900 rounded-xl p-5">
+    <div className="mb-6 bg-white border border-saffron-100 shadow-sm rounded-2xl p-5">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-semibold">New product</h2>
-        <button onClick={() => setOpen(false)} className="text-gray-500 hover:text-white transition"><X className="h-5 w-5" /></button>
+        <h2 className="font-semibold text-gray-900">New product</h2>
+        <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-700 transition"><X className="h-5 w-5" /></button>
       </div>
 
       {/* Searchable name picker */}
       <div ref={pickerRef} className="relative mb-4">
-        <label className="text-xs text-gray-400">Product name * <span className="text-gray-600">— search the Indian grocery list or type your own</span></label>
+        <label className="text-xs text-gray-500">Product name * <span className="text-gray-400">— search the Indian grocery list or type your own</span></label>
         <div className="relative">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
             className={`${inp} pl-8`}
             value={query}
@@ -187,16 +187,16 @@ export function AddProductForm({ categories }: { categories: Category[] }) {
           />
         </div>
         {showList && matches.length > 0 && (
-          <div className="absolute z-20 mt-1 w-full max-h-72 overflow-auto bg-gray-800 border border-gray-700 rounded-lg shadow-xl">
+          <div className="absolute z-20 mt-1 w-full max-h-72 overflow-auto bg-white border border-saffron-200 rounded-lg shadow-xl">
             {matches.map((item) => (
               <button
                 key={`${item.name}-${item.brand ?? ''}`}
                 type="button"
                 onClick={() => pick(item)}
-                className="w-full text-left px-3 py-2 hover:bg-gray-700 transition flex items-center justify-between gap-2"
+                className="w-full text-left px-3 py-2 hover:bg-saffron-50 transition flex items-center justify-between gap-2"
               >
-                <span className="text-sm text-white">{item.name}</span>
-                <span className="text-[11px] text-gray-500 shrink-0">{item.brand ? `${item.brand} · ` : ''}{item.category}</span>
+                <span className="text-sm text-gray-900">{item.name}</span>
+                <span className="text-[11px] text-gray-400 shrink-0">{item.brand ? `${item.brand} · ` : ''}{item.category}</span>
               </button>
             ))}
           </div>
@@ -204,24 +204,24 @@ export function AddProductForm({ categories }: { categories: Category[] }) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <label className="text-xs text-gray-400">Brand
+        <label className="text-xs text-gray-500">Brand
           <input className={inp} value={f.brand} onChange={(e) => set('brand', e.target.value)} /></label>
-        <label className="text-xs text-gray-400">Category
+        <label className="text-xs text-gray-500">Category
           <select className={inp} value={f.category_id} onChange={(e) => set('category_id', e.target.value)}>
             <option value="">— none —</option>
             {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select></label>
-        <label className="text-xs text-gray-400">Variant / size
+        <label className="text-xs text-gray-500">Variant / size
           <input className={inp} value={f.variant_name} placeholder="e.g. 1kg, 500g" onChange={(e) => set('variant_name', e.target.value)} /></label>
-        <label className="text-xs text-gray-400">SKU <span className="text-gray-600">(auto if blank)</span>
+        <label className="text-xs text-gray-500">SKU <span className="text-gray-600">(auto if blank)</span>
           <input className={inp} value={f.sku} onChange={(e) => set('sku', e.target.value)} /></label>
-        <label className="text-xs text-gray-400">Price € *
+        <label className="text-xs text-gray-500">Price € *
           <input className={inp} type="number" min={0} step="0.01" value={f.price} onChange={(e) => set('price', e.target.value)} /></label>
-        <label className="text-xs text-gray-400">Initial stock
+        <label className="text-xs text-gray-500">Initial stock
           <input className={inp} type="number" min={0} value={f.quantity} onChange={(e) => set('quantity', e.target.value)} /></label>
-        <label className="text-xs text-gray-400">Low-stock threshold
+        <label className="text-xs text-gray-500">Low-stock threshold
           <input className={inp} type="number" min={0} value={f.threshold} onChange={(e) => set('threshold', e.target.value)} /></label>
-        <label className="text-xs text-gray-400 flex items-center gap-2 pt-5">
+        <label className="text-xs text-gray-500 flex items-center gap-2 pt-5">
           <input type="checkbox" checked={f.is_active} onChange={(e) => set('is_active', e.target.checked)} /> Active (show on store)
         </label>
       </div>
@@ -229,10 +229,10 @@ export function AddProductForm({ categories }: { categories: Category[] }) {
       {/* Photo */}
       <div className="mt-4">
         <div className="flex items-end gap-2">
-          <label className="text-xs text-gray-400 flex-1">Image URL
+          <label className="text-xs text-gray-500 flex-1">Image URL
             <input className={inp} value={f.image_url} placeholder="https://… or use Find photo" onChange={(e) => set('image_url', e.target.value)} /></label>
           <button type="button" onClick={findPhotos} disabled={photoLoading}
-            className="flex items-center gap-1 text-sm bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-white px-3 py-2 rounded-lg transition shrink-0">
+            className="flex items-center gap-1 text-sm bg-white border border-saffron-200 hover:border-saffron-400 disabled:opacity-40 text-gray-700 px-3 py-2 rounded-lg transition shrink-0">
             {photoLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />} Find photo
           </button>
         </div>
@@ -240,7 +240,7 @@ export function AddProductForm({ categories }: { categories: Category[] }) {
           <div className="mt-3 flex flex-wrap gap-2">
             {photos.map((p) => (
               <button key={p.url} type="button" onClick={() => set('image_url', p.url)} title={p.label}
-                className={`h-16 w-16 rounded border overflow-hidden ${f.image_url === p.url ? 'border-saffron-500 ring-2 ring-saffron-500' : 'border-gray-700 hover:border-gray-500'}`}>
+                className={`h-16 w-16 rounded border overflow-hidden ${f.image_url === p.url ? 'border-saffron-500 ring-2 ring-saffron-500' : 'border-saffron-200 hover:border-saffron-400'}`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={p.url} alt={p.label} className="h-full w-full object-cover" />
               </button>
@@ -248,16 +248,16 @@ export function AddProductForm({ categories }: { categories: Category[] }) {
           </div>
         )}
         {f.image_url && (
-          <p className="text-[11px] text-green-400 mt-2 truncate">Selected image: {f.image_url}</p>
+          <p className="text-[11px] text-green-600 mt-2 truncate">Selected image: {f.image_url}</p>
         )}
       </div>
 
       <div className="flex items-center gap-3 mt-5">
         <button onClick={submit} disabled={saving}
-          className="flex items-center gap-1 text-sm bg-saffron-500 hover:bg-saffron-600 disabled:opacity-40 text-white px-4 py-2 rounded-lg transition">
+          className="flex items-center gap-1 text-sm bg-gradient-spice hover:opacity-90 disabled:opacity-40 text-white px-4 py-2 rounded-lg transition">
           <Plus className="h-4 w-4" />{saving ? 'Creating…' : 'Create product'}
         </button>
-        <button onClick={() => { reset(); setOpen(false) }} className="text-sm text-gray-400 hover:text-white transition">Cancel</button>
+        <button onClick={() => { reset(); setOpen(false) }} className="text-sm text-gray-400 hover:text-gray-700 transition">Cancel</button>
       </div>
     </div>
   )

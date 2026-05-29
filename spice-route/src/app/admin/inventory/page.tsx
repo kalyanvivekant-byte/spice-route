@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/server'
-import { InventoryTable } from './InventoryTable'
+import { InventoryManager } from './InventoryManager'
 import { AddProductForm } from './AddProductForm'
 import { UntrackedProducts } from './UntrackedProducts'
 
@@ -11,11 +11,14 @@ export default async function AdminInventoryPage() {
       .from('inventory')
       .select(`
         id, quantity, low_stock_threshold, cost_price_eur, expiry_date,
-        variant:product_variants(id, name, sku, price_eur, compare_at_price_eur, product:products(id, name, images:product_images(id, url, is_primary))),
-        supplier:suppliers(name)
+        variant:product_variants(
+          id, name, sku, price_eur, compare_at_price_eur,
+          product:products(id, name, brand, is_active, category:categories(id, name), images:product_images(id, url, is_primary))
+        ),
+        supplier:suppliers(id, name)
       `)
       .order('quantity', { ascending: true })
-      .limit(200),
+      .limit(500),
     supabase
       .from('products')
       .select(`
@@ -29,12 +32,12 @@ export default async function AdminInventoryPage() {
   ])
 
   return (
-    <>
+    <div className="min-h-full bg-[#fffaf3] text-gray-900">
       <div className="px-6 pt-6">
         <AddProductForm categories={(categories as any) ?? []} />
         <UntrackedProducts products={(products as any) ?? []} />
       </div>
-      <InventoryTable items={(items as any) ?? []} />
-    </>
+      <InventoryManager items={(items as any) ?? []} categories={(categories as any) ?? []} />
+    </div>
   )
 }
