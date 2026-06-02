@@ -68,14 +68,14 @@ export async function resolveCollectionProducts(
     for (const r of (sold ?? []) as any[]) {
       totals.set(r.product_id, (totals.get(r.product_id) ?? 0) + (r.quantity ?? 0))
     }
-    const topIds = [...totals.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit).map(([id]) => id)
+    const topIds = Array.from(totals.entries()).sort((a, b) => b[1] - a[1]).slice(0, limit).map(([id]) => id)
     if (topIds.length) {
       const { data } = await supabase
         .from('products')
         .select(PRODUCT_SELECT)
         .in('id', topIds)
         .eq('is_active', true)
-      const order = new Map(topIds.map((id, i) => [id, i]))
+      const order = new Map(topIds.map((id, i): [string, number] => [id, i]))
       return (data ?? [])
         .map(mapProduct)
         .sort((a: any, b: any) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
