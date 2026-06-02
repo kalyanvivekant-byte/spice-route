@@ -4,6 +4,8 @@ import { ProductCard } from '@/components/product/ProductCard'
 import { HeroBanner } from '@/components/layout/HeroBanner'
 import { CategoryGrid } from '@/components/layout/CategoryGrid'
 import { FestivalBanner } from '@/components/layout/FestivalBanner'
+import { BannerCarousel } from '@/components/layout/BannerCarousel'
+import { resolveCollectionProducts } from '@/lib/collections'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
@@ -44,8 +46,41 @@ async function getDeals() {
   return data ?? []
 }
 
+async function getBanners() {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from('banners')
+    .select('id, title, image_url, mobile_image_url, link_url')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true })
+  return data ?? []
+}
+
+async function getHomeCollections() {
+  const supabase = createClient()
+  const { data: collections } = await supabase
+    .from('collections')
+    .select('id, title, slug, subtitle, type')
+    .eq('is_active', true)
+    .eq('show_on_home', true)
+    .order('sort_order', { ascending: true })
+
+  const rows = await Promise.all(
+    (collections ?? []).map(async (c: any) => ({
+      ...c,
+      products: await resolveCollectionProducts(supabase, c, 8),
+    }))
+  )
+  return rows.filter((r) => r.products.length > 0)
+}
+
 export default async function HomePage() {
-  const [featured, deals] = await Promise.all([getFeaturedProducts(), getDeals()])
+  const [featured, deals, banners, homeCollections] = await Promise.all([
+    getFeaturedProducts(),
+    getDeals(),
+    getBanners(),
+    getHomeCollections(),
+  ])
 
   const featuredProducts = featured.map((p: any) => ({
     ...p,
@@ -65,6 +100,7 @@ export default async function HomePage() {
   return (
     <>
       <HeroBanner />
+      <BannerCarousel banners={banners as any} />
       <FestivalBanner />
 
       <div className="max-w-7xl mx-auto px-4 py-12 space-y-16">
@@ -94,6 +130,27 @@ export default async function HomePage() {
             ))}
           </div>
         </section>
+
+        {/* Curated collection rows (managed in admin) */}
+        {homeCollections.map((c: any) => (
+          <section key={c.id}>
+            <div className="flex items-end justify-between mb-6">
+              <div>
+                <span className="eyebrow">Collection</span>
+                <h2 className="mt-2 text-3xl font-extrabold">{c.title}</h2>
+                {c.subtitle && <p className="text-muted-foreground text-sm mt-1">{c.subtitle}</p>}
+              </div>
+              <Link href={`/collections/${c.slug}`} className="text-saffron-600 hover:text-saffron-700 font-semibold text-sm shrink-0">
+                View all →
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {c.products.map((product: any) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          </section>
+        ))}
 
         {/* Deals Section */}
         {dealProducts.length > 0 && (

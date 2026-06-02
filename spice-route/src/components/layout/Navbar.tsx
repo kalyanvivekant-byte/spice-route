@@ -155,6 +155,24 @@ export function Navbar() {
                   All Products
                 </Link>
               </li>
+              <li className="shrink-0">
+                <Link
+                  href="/collections/bestsellers"
+                  className="flex items-center gap-1.5 rounded-full border border-saffron-100 bg-white px-3.5 py-1.5 text-gray-600 whitespace-nowrap hover:border-saffron-300 hover:text-saffron-700 hover:bg-saffron-50 transition-colors"
+                >
+                  <span>⭐</span>
+                  Bestsellers
+                </Link>
+              </li>
+              <li className="shrink-0">
+                <Link
+                  href="/collections/new-arrivals"
+                  className="flex items-center gap-1.5 rounded-full border border-saffron-100 bg-white px-3.5 py-1.5 text-gray-600 whitespace-nowrap hover:border-saffron-300 hover:text-saffron-700 hover:bg-saffron-50 transition-colors"
+                >
+                  <span>🆕</span>
+                  New Arrivals
+                </Link>
+              </li>
               {categories.map((cat) => (
                 <li key={cat.slug} className="shrink-0">
                   <Link
