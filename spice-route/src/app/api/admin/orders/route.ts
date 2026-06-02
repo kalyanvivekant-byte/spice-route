@@ -66,15 +66,39 @@ export async function PATCH(request: NextRequest) {
   }
 
   // Handle refunds
-  if (refundAmount && order.stripe_payment_intent_id) {
-    const pi = await stripe.paymentIntents.retrieve(order.stripe_payment_intent_id)
-    if (pi.latest_charge) {
+  if (refundAmount) {
+    if (!order.stripe_payment_intent_id) {
+      return NextResponse.json({ error: 'This order has no Stripe payment to refund' }, { status: 400 })
+    }
+    const amount = Number(refundAmount)
+    if (!amount || amount <= 0 || amount > Number(order.total_eur)) {
+      return NextResponse.json({ error: 'Invalid refund amount' }, { status: 400 })
+    }
+    try {
+      const pi = await stripe.paymentIntents.retrieve(order.stripe_payment_intent_id)
+      if (!pi.latest_charge) {
+        return NextResponse.json({ error: 'No charge found for this payment' }, { status: 400 })
+      }
       await stripe.refunds.create({
         charge: pi.latest_charge as string,
-        amount: Math.round(refundAmount * 100),
+        amount: Math.round(amount * 100),
         reason: 'requested_by_customer',
       })
+    } catch (e: any) {
+      return NextResponse.json({ error: e.message ?? 'Refund failed' }, { status: 500 })
     }
+
+    // Mark as refunded (full or partial) and record the amount.
+    const fullyRefunded = amount >= Number(order.total_eur)
+    const { data: refunded } = await supabase
+      .from('orders')
+      .update({ status: 'refunded', notes: `${order.notes ? order.notes + ' · ' : ''}Refunded €${amount.toFixed(2)}${fullyRefunded ? ' (full)' : ' (partial)'}` })
+      .eq('id', orderId)
+      .select()
+      .single()
+
+    if (phone) await notifyOrderStatus(phone, order.order_number, 'refunded').catch(console.error)
+    return NextResponse.json({ order: refunded ?? order, refunded: amount })
   }
 
   return NextResponse.json({ order })

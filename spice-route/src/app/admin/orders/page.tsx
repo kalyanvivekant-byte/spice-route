@@ -86,7 +86,12 @@ export default async function AdminOrdersPage({
                   {format(new Date(order.created_at), 'dd MMM HH:mm')}
                 </td>
                 <td className="p-4">
-                  <AdminOrderActions orderId={order.id} currentStatus={order.status} />
+                  <AdminOrderActions
+                    orderId={order.id}
+                    currentStatus={order.status}
+                    total={order.total_eur}
+                    paymentIntentId={order.stripe_payment_intent_id}
+                  />
                 </td>
               </tr>
             ))}
