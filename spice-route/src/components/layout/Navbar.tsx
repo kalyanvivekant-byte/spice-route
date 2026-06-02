@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
-import { ShoppingCart, Search, User, Menu, X } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { ShoppingCart, Search, User, Menu, X, ChevronDown } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 import { useCart } from '@/hooks/useCart'
 import { useAuth } from '@/hooks/useAuth'
 import { SearchBar } from '@/components/layout/SearchBar'
@@ -30,12 +31,45 @@ const categories = [
   { name: 'Fresh Produce', slug: 'fresh-produce', icon: '🥬' },
 ]
 
+type Child = { name: string; slug: string }
+type TopCat = { name: string; slug: string; icon: string; children: Child[] }
+
 export function Navbar() {
   const { itemCount, openCart } = useCart()
   const { user, signOut } = useAuth()
   const count = itemCount()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [tree, setTree] = useState<TopCat[]>(() => categories.map((c) => ({ ...c, children: [] })))
+  const [openMobileCat, setOpenMobileCat] = useState<string | null>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase
+      .from('categories')
+      .select('id, name, slug, parent_id, sort_order')
+      .eq('is_active', true)
+      .then(({ data }) => {
+        if (!data) return
+        const bySlug = new Map(data.map((c: any) => [c.slug, c]))
+        const childrenByParent = new Map<string, Child[]>()
+        for (const c of data as any[]) {
+          if (!c.parent_id) continue
+          const arr = childrenByParent.get(c.parent_id) ?? []
+          arr.push({ name: c.name, slug: c.slug })
+          childrenByParent.set(c.parent_id, arr)
+        }
+        setTree(
+          categories.map((top) => {
+            const dbCat = bySlug.get(top.slug) as any
+            const kids = (dbCat ? childrenByParent.get(dbCat.id) ?? [] : []).sort(
+              (a, b) => a.name.localeCompare(b.name)
+            )
+            return { ...top, children: kids }
+          })
+        )
+      })
+  }, [])
 
   return (
     <>
@@ -173,15 +207,37 @@ export function Navbar() {
                   New Arrivals
                 </Link>
               </li>
-              {categories.map((cat) => (
-                <li key={cat.slug} className="shrink-0">
+              {tree.map((cat) => (
+                <li key={cat.slug} className="shrink-0 relative group">
                   <Link
                     href={`/categories/${cat.slug}`}
                     className="flex items-center gap-1.5 rounded-full border border-saffron-100 bg-white px-3.5 py-1.5 text-gray-600 whitespace-nowrap hover:border-saffron-300 hover:text-saffron-700 hover:bg-saffron-50 transition-colors"
                   >
                     <span>{cat.icon}</span>
                     {cat.name}
+                    {cat.children.length > 0 && <ChevronDown className="h-3.5 w-3.5 opacity-60" />}
                   </Link>
+                  {cat.children.length > 0 && (
+                    <div className="absolute left-0 top-full pt-2 hidden group-hover:block z-50">
+                      <div className="min-w-[220px] rounded-xl border border-saffron-100 bg-white shadow-lg p-2">
+                        <Link
+                          href={`/categories/${cat.slug}`}
+                          className="block px-3 py-1.5 text-sm font-semibold text-saffron-700 hover:bg-saffron-50 rounded-lg"
+                        >
+                          All {cat.name} →
+                        </Link>
+                        {cat.children.map((child) => (
+                          <Link
+                            key={child.slug}
+                            href={`/categories/${child.slug}`}
+                            className="block px-3 py-1.5 text-sm text-gray-600 hover:bg-saffron-50 hover:text-saffron-700 rounded-lg"
+                          >
+                            {child.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
@@ -206,16 +262,48 @@ export function Navbar() {
               <span>🛍️</span>
               All Products
             </Link>
-            {categories.map((cat) => (
-              <Link
-                key={cat.slug}
-                href={`/categories/${cat.slug}`}
-                className="flex items-center gap-2 py-2 text-sm text-gray-600 hover:text-saffron-600"
-                onClick={() => setMobileOpen(false)}
-              >
-                <span>{cat.icon}</span>
-                {cat.name}
-              </Link>
+            <Link href="/collections/bestsellers" className="flex items-center gap-2 py-2 text-sm text-gray-600 hover:text-saffron-600" onClick={() => setMobileOpen(false)}>
+              <span>⭐</span> Bestsellers
+            </Link>
+            <Link href="/collections/new-arrivals" className="flex items-center gap-2 py-2 text-sm text-gray-600 hover:text-saffron-600" onClick={() => setMobileOpen(false)}>
+              <span>🆕</span> New Arrivals
+            </Link>
+            {tree.map((cat) => (
+              <div key={cat.slug}>
+                <div className="flex items-center">
+                  <Link
+                    href={`/categories/${cat.slug}`}
+                    className="flex items-center gap-2 py-2 text-sm text-gray-600 hover:text-saffron-600 flex-1"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <span>{cat.icon}</span>
+                    {cat.name}
+                  </Link>
+                  {cat.children.length > 0 && (
+                    <button
+                      aria-label={`Toggle ${cat.name}`}
+                      onClick={() => setOpenMobileCat(openMobileCat === cat.slug ? null : cat.slug)}
+                      className="p-2 text-gray-400"
+                    >
+                      <ChevronDown className={`h-4 w-4 transition-transform ${openMobileCat === cat.slug ? 'rotate-180' : ''}`} />
+                    </button>
+                  )}
+                </div>
+                {openMobileCat === cat.slug && cat.children.length > 0 && (
+                  <div className="ml-7 border-l border-saffron-100 pl-3 pb-1">
+                    {cat.children.map((child) => (
+                      <Link
+                        key={child.slug}
+                        href={`/categories/${child.slug}`}
+                        className="block py-1.5 text-sm text-gray-500 hover:text-saffron-600"
+                        onClick={() => setMobileOpen(false)}
+                      >
+                        {child.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         )}

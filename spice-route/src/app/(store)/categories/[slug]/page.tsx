@@ -38,6 +38,13 @@ export default async function CategoryPage({ params, searchParams }: Props) {
 
   if (!category) notFound()
 
+  // Include products from any child categories (mega-menu subcategories).
+  const { data: children } = await supabase
+    .from('categories')
+    .select('id')
+    .eq('parent_id', category.id)
+  const categoryIds = [category.id, ...((children ?? []) as any[]).map((c) => c.id)]
+
   const page = parseInt(searchParams.page ?? '1')
   const pageSize = 24
   const offset = (page - 1) * pageSize
@@ -50,7 +57,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
       variants:product_variants(id, name, price_eur, compare_at_price_eur, inventory(quantity)),
       reviews(rating)
     `, { count: 'exact' })
-    .eq('category_id', category.id)
+    .in('category_id', categoryIds)
     .eq('is_active', true)
 
   if (searchParams.brand) query = query.eq('brand', searchParams.brand)
