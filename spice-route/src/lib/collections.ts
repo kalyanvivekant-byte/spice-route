@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 const PRODUCT_SELECT = `
-  id, name, slug, brand, dietary_tags, is_featured, expiry_discount, created_at,
+  id, name, slug, brand, dietary_tags, is_featured, expiry_discount, is_bundle, created_at,
   images:product_images(url, is_primary),
   variants:product_variants(id, name, price_eur, compare_at_price_eur, inventory(quantity)),
   reviews(rating)
@@ -96,6 +96,17 @@ export async function resolveCollectionProducts(
       .select(PRODUCT_SELECT)
       .eq('is_active', true)
       .eq('is_featured', true)
+      .limit(limit)
+    return (data ?? []).map(mapProduct)
+  }
+
+  if (collection.type === 'bundles') {
+    const { data } = await supabase
+      .from('products')
+      .select(PRODUCT_SELECT)
+      .eq('is_active', true)
+      .eq('is_bundle', true)
+      .order('created_at', { ascending: false })
       .limit(limit)
     return (data ?? []).map(mapProduct)
   }

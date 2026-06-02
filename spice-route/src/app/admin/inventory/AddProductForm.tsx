@@ -37,7 +37,7 @@ export function AddProductForm({ categories }: { categories: Category[] }) {
 
   const [f, setF] = useState({
     name: '', brand: '', category_id: '', variant_name: '1 unit', sku: '',
-    price: '', quantity: '0', threshold: '10', image_url: '', is_active: true,
+    price: '', quantity: '0', threshold: '10', image_url: '', is_active: true, is_bundle: false,
   })
 
   function set(k: keyof typeof f, v: any) {
@@ -45,7 +45,7 @@ export function AddProductForm({ categories }: { categories: Category[] }) {
   }
 
   function reset() {
-    setF({ name: '', brand: '', category_id: '', variant_name: '1 unit', sku: '', price: '', quantity: '0', threshold: '10', image_url: '', is_active: true })
+    setF({ name: '', brand: '', category_id: '', variant_name: '1 unit', sku: '', price: '', quantity: '0', threshold: '10', image_url: '', is_active: true, is_bundle: false })
     setQuery('')
     setPhotos([])
   }
@@ -123,6 +123,7 @@ export function AddProductForm({ categories }: { categories: Category[] }) {
         brand: f.brand || null,
         category_id: f.category_id || null,
         is_active: f.is_active,
+        is_bundle: f.is_bundle,
       })
       .select('id').single()
     if (pErr || !product) { toast.error(pErr?.message ?? 'Failed to create product'); setSaving(false); return }
@@ -223,6 +224,9 @@ export function AddProductForm({ categories }: { categories: Category[] }) {
           <input className={inp} type="number" min={0} value={f.threshold} onChange={(e) => set('threshold', e.target.value)} /></label>
         <label className="text-xs text-gray-500 flex items-center gap-2 pt-5">
           <input type="checkbox" checked={f.is_active} onChange={(e) => set('is_active', e.target.checked)} /> Active (show on store)
+        </label>
+        <label className="text-xs text-gray-500 flex items-center gap-2 pt-5">
+          <input type="checkbox" checked={f.is_bundle} onChange={(e) => set('is_bundle', e.target.checked)} /> Bundle / combo pack
         </label>
       </div>
 

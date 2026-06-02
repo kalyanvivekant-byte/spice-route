@@ -64,7 +64,12 @@ export function ProductCard({ product }: ProductCardProps) {
 
           {/* Badges */}
           <div className="absolute top-2 left-2 flex flex-col gap-1">
-            {product.is_featured && (
+            {(product as any).is_bundle && (
+              <span className="bg-purple-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full shadow-sm">
+                🎁 Bundle
+              </span>
+            )}
+            {product.is_featured && !(product as any).is_bundle && (
               <span className="bg-gradient-turmeric text-white text-xs font-semibold px-2 py-0.5 rounded-full shadow-sm">
                 ★ Featured
               </span>
