@@ -20,6 +20,13 @@ export default async function TrackOrderPage({ params }: { params: { id: string 
 
   if (!order) notFound()
 
+  const { data: shipment } = await supabase
+    .from('shipments')
+    .select('carrier, method_name, tracking_number, tracking_url, status')
+    .eq('order_id', order.id)
+    .order('created_at', { ascending: false })
+    .maybeSingle()
+
   const currentIndex = STEPS.findIndex((s) => s.key === order.status)
   const cancelled = order.status === 'cancelled' || order.status === 'refunded'
 
@@ -27,6 +34,24 @@ export default async function TrackOrderPage({ params }: { params: { id: string 
     <div className="max-w-2xl mx-auto px-4 py-10">
       <h1 className="text-2xl font-bold mb-1">Track Order</h1>
       <p className="text-muted-foreground text-sm mb-8">#{order.order_number}</p>
+
+      {shipment?.tracking_number && (
+        <div className="rounded-2xl border border-saffron-200 bg-saffron-50 p-4 mb-8">
+          <p className="text-sm font-semibold text-gray-900">
+            Shipped{shipment.carrier ? ` via ${shipment.carrier}` : ''}
+          </p>
+          <p className="text-sm text-gray-600 mt-0.5">
+            Tracking: <span className="font-mono">{shipment.tracking_number}</span>
+            {shipment.status ? ` · ${shipment.status}` : ''}
+          </p>
+          {shipment.tracking_url && (
+            <a href={shipment.tracking_url} target="_blank" rel="noreferrer"
+              className="inline-block mt-2 text-sm font-semibold text-saffron-700 hover:underline">
+              Track parcel with carrier →
+            </a>
+          )}
+        </div>
+      )}
 
       {cancelled ? (
         <div className="rounded-2xl border p-6 text-center">
