@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { format } from 'date-fns'
+import Link from 'next/link'
 
 export default async function AdminCustomersPage() {
   const supabase = createAdminClient()
@@ -27,7 +28,7 @@ export default async function AdminCustomersPage() {
           <tbody className="divide-y divide-gray-800">
             {customers?.map((c: any) => (
               <tr key={c.id} className="hover:bg-gray-800/50 transition">
-                <td className="p-4 text-white">{c.full_name ?? '–'}</td>
+                <td className="p-4 text-white"><Link href={`/admin/customers/${c.id}`} className="text-saffron-400 hover:underline">{c.full_name ?? '–'}</Link></td>
                 <td className="p-4 text-gray-400">{c.email}</td>
                 <td className="p-4 text-gray-400">{c.phone ?? '–'}</td>
                 <td className="p-4">
