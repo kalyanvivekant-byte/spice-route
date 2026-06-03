@@ -35,14 +35,16 @@ export async function GET(request: NextRequest) {
 
 // PATCH update order status / assign driver
 export async function PATCH(request: NextRequest) {
-  if (!await requireAdmin()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const admin = await requireAdmin()
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { orderId, status, driverId, refundAmount } = await request.json()
+  const { orderId, status, driverId, refundAmount, tags } = await request.json()
   const supabase = createAdminClient()
 
   const updateData: Record<string, any> = {}
   if (status) updateData.status = status
   if (driverId) updateData.driver_id = driverId
+  if (tags) updateData.tags = tags
 
   const { data: order } = await supabase
     .from('orders')
@@ -52,6 +54,13 @@ export async function PATCH(request: NextRequest) {
     .single()
 
   if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+
+  if (status) {
+    await supabase.from('order_events').insert({
+      order_id: orderId, type: 'status', created_by: admin.id,
+      message: `Status changed to ${String(status).replace(/_/g, ' ')}`,
+    })
+  }
 
   // Send notifications
   const email = order.guest_email ?? (await supabase.from('profiles').select('email').eq('id', order.user_id).single()).data?.email
@@ -97,6 +106,10 @@ export async function PATCH(request: NextRequest) {
       .select()
       .single()
 
+    await supabase.from('order_events').insert({
+      order_id: orderId, type: 'refund', created_by: admin.id,
+      message: `Refunded €${amount.toFixed(2)}${fullyRefunded ? ' (full)' : ' (partial)'}`,
+    })
     if (phone) await notifyOrderStatus(phone, order.order_number, 'refunded').catch(console.error)
     return NextResponse.json({ order: refunded ?? order, refunded: amount })
   }
