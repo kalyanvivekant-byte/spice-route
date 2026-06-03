@@ -44,7 +44,13 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
 
   return (
     <div className="p-6 max-w-5xl mx-auto text-white">
-      <Link href="/admin/orders" className="text-sm text-saffron-400 hover:underline">← Orders</Link>
+      <div className="flex items-center justify-between">
+        <Link href="/admin/orders" className="text-sm text-saffron-400 hover:underline">← Orders</Link>
+        <div className="flex gap-3 text-sm">
+          <Link href={`/admin/orders/${order.id}/print?doc=invoice`} className="text-saffron-400 hover:underline">Invoice</Link>
+          <Link href={`/admin/orders/${order.id}/print?doc=packing`} className="text-saffron-400 hover:underline">Packing slip</Link>
+        </div>
+      </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 mt-2 mb-6">
         <div>
