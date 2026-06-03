@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { formatCurrency } from '@/lib/vat'
 import {
   Check, Trash2, ImageIcon, Search, Minus, Plus, ArrowUpDown,
-  Download, Upload, X, Package, AlertTriangle, XCircle, CalendarClock,
+  Download, Upload, X, Package, AlertTriangle, XCircle, CalendarClock, PackagePlus,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -45,6 +45,16 @@ export function InventoryManager({ items, categories }: { items: Item[]; categor
   const supabase = createClient()
   const router = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
+  const [userId, setUserId] = useState<string | null>(null)
+  useEffect(() => { supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null)) }, [supabase])
+
+  // Audit log helper
+  async function logAdj(variantId: string | undefined, delta: number, newQty: number, reason: string, supplierId?: string | null) {
+    if (!variantId || delta === 0) return
+    await supabase.from('inventory_adjustments').insert({
+      variant_id: variantId, delta, new_quantity: newQty, reason, supplier_id: supplierId ?? null, created_by: userId,
+    })
+  }
 
   const [rows, setRows] = useState(() =>
     items.map((i) => {
@@ -184,13 +194,35 @@ export function InventoryManager({ items, categories }: { items: Item[]; categor
   async function adjustQty(id: string, delta: number) {
     const row = rows.find((r) => r.id === id)
     if (!row) return
-    const next = Math.max(0, (parseInt(row._qty, 10) || 0) + delta)
+    const prev = parseInt(row._qty, 10) || 0
+    const next = Math.max(0, prev + delta)
     update(id, { _qty: String(next), quantity: next })
     const { error } = await supabase
       .from('inventory')
       .update({ quantity: next, updated_at: new Date().toISOString() })
       .eq('id', id)
-    if (error) toast.error(error.message)
+    if (error) { toast.error(error.message); return }
+    await logAdj(row.variant?.id, next - prev, next, 'correction')
+  }
+
+  // Receive stock against the row's supplier
+  async function receive(id: string) {
+    const row = rows.find((r) => r.id === id)
+    if (!row) return
+    const input = window.prompt(`Receive how many units of ${row.variant?.product?.name ?? 'this item'}?`, '0')
+    if (input === null) return
+    const qty = parseInt(input, 10)
+    if (!qty || qty <= 0) return toast.error('Enter a positive quantity')
+    const prev = parseInt(row._qty, 10) || 0
+    const next = prev + qty
+    update(id, { _qty: String(next), quantity: next })
+    const { error } = await supabase
+      .from('inventory')
+      .update({ quantity: next, updated_at: new Date().toISOString() })
+      .eq('id', id)
+    if (error) { toast.error(error.message); return }
+    await logAdj(row.variant?.id, qty, next, 'received', row.supplier?.id ?? null)
+    toast.success(`Received ${qty} · stock now ${next}`)
   }
 
   // ---- full row save (price/deal/cost/threshold/qty) ----
@@ -229,6 +261,9 @@ export function InventoryManager({ items, categories }: { items: Item[]; categor
         .eq('id', row.variant.id)
       if (pErr) { toast.error(`Stock saved, but price failed: ${pErr.message}`); update(id, { _saving: false }); return }
     }
+
+    const qtyDelta = quantity - (row.quantity ?? quantity)
+    if (qtyDelta !== 0) await logAdj(row.variant?.id, qtyDelta, quantity, 'correction')
 
     update(id, {
       quantity, low_stock_threshold: threshold, cost_price_eur: cost,
@@ -577,6 +612,7 @@ export function InventoryManager({ items, categories }: { items: Item[]; categor
                       <input type="number" min={0} value={r._qty} onChange={(e) => update(r.id, { _qty: e.target.value })}
                         className={`w-14 bg-white border border-saffron-200 rounded px-2 py-1 text-sm text-center focus:outline-none focus:border-saffron-500 ${status !== 'ok' ? 'text-red-500 font-semibold' : 'text-gray-900'}`} />
                       <button onClick={() => adjustQty(r.id, 1)} className="h-7 w-7 rounded-md border border-saffron-200 hover:bg-saffron-100 flex items-center justify-center text-gray-600"><Plus className="h-3 w-3" /></button>
+                      <button onClick={() => receive(r.id)} title="Receive stock" className="h-7 px-2 rounded-md border border-saffron-200 hover:bg-saffron-100 flex items-center justify-center text-gray-600"><PackagePlus className="h-3.5 w-3.5" /></button>
                     </div>
                   </td>
                   <td className="p-3"><input type="number" min={0} value={r._threshold} onChange={(e) => update(r.id, { _threshold: e.target.value })} className={inputCls} /></td>
