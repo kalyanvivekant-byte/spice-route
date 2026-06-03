@@ -45,7 +45,7 @@ export function Footer() {
         <div>
           <h3 className="text-white font-semibold mb-4">Customer Service</h3>
           <ul className="space-y-2 text-sm">
-            <li><Link href="/account/orders" className="hover:text-white transition">Track Order</Link></li>
+            <li><Link href="/track" className="hover:text-white transition">Track Order</Link></li>
             <li><Link href="/returns" className="hover:text-white transition">Returns & Refunds</Link></li>
             <li><Link href="/delivery" className="hover:text-white transition">Delivery Info</Link></li>
             <li><Link href="/contact" className="hover:text-white transition">Contact Us</Link></li>
