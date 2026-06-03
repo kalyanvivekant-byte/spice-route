@@ -41,7 +41,7 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
     if (!confirm(`Set ${selected.size} order(s) to "${status.replace(/_/g, ' ')}"?`)) return
     setBusy(true)
     let ok = 0
-    for (const id of selected) {
+    for (const id of Array.from(selected)) {
       const res = await fetch('/api/admin/orders', {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId: id, status }),
