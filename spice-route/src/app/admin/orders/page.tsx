@@ -1,18 +1,21 @@
 import { createAdminClient } from '@/lib/supabase/server'
-import { formatCurrency } from '@/lib/vat'
-import { format } from 'date-fns'
 import Link from 'next/link'
-import { AdminOrderActions } from '@/components/admin/AdminOrderActions'
+import { OrdersTable } from '@/components/admin/OrdersTable'
 
 const STATUS_PIPELINE = ['received', 'picking', 'packed', 'out_for_delivery', 'delivered', 'cancelled', 'refunded']
+
+export const dynamic = 'force-dynamic'
 
 export default async function AdminOrdersPage({
   searchParams,
 }: {
-  searchParams: { status?: string; page?: string }
+  searchParams: { status?: string; page?: string; q?: string; from?: string; to?: string }
 }) {
   const supabase = createAdminClient()
   const status = searchParams.status ?? ''
+  const q = searchParams.q?.trim() ?? ''
+  const from = searchParams.from ?? ''
+  const to = searchParams.to ?? ''
   const page = parseInt(searchParams.page ?? '1')
   const limit = 50
 
@@ -23,8 +26,20 @@ export default async function AdminOrdersPage({
     .range((page - 1) * limit, page * limit - 1)
 
   if (status) query = query.eq('status', status)
+  if (q) query = query.or(`order_number.ilike.%${q}%,guest_email.ilike.%${q}%`)
+  if (from) query = query.gte('created_at', new Date(`${from}T00:00:00`).toISOString())
+  if (to) query = query.lte('created_at', new Date(`${to}T23:59:59`).toISOString())
 
   const { data: orders, count } = await query
+  const qsFor = (s: string) => {
+    const p = new URLSearchParams()
+    if (s) p.set('status', s)
+    if (q) p.set('q', q)
+    if (from) p.set('from', from)
+    if (to) p.set('to', to)
+    const str = p.toString()
+    return `/admin/orders${str ? '?' + str : ''}`
+  }
 
   return (
     <div className="p-6">
@@ -33,71 +48,39 @@ export default async function AdminOrdersPage({
         <span className="text-gray-400 text-sm">{count?.toLocaleString()} total</span>
       </div>
 
+      {/* Search + date filter */}
+      <form method="get" className="flex flex-wrap items-end gap-2 mb-4">
+        {status && <input type="hidden" name="status" value={status} />}
+        <div>
+          <label className="block text-[11px] text-gray-500 mb-1">Search</label>
+          <input name="q" defaultValue={q} placeholder="Order # or email"
+            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-100 focus:outline-none focus:border-saffron-500 w-56" />
+        </div>
+        <div>
+          <label className="block text-[11px] text-gray-500 mb-1">From</label>
+          <input type="date" name="from" defaultValue={from} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-100 focus:outline-none focus:border-saffron-500" />
+        </div>
+        <div>
+          <label className="block text-[11px] text-gray-500 mb-1">To</label>
+          <input type="date" name="to" defaultValue={to} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-100 focus:outline-none focus:border-saffron-500" />
+        </div>
+        <button className="bg-saffron-500 hover:bg-saffron-600 text-white text-sm px-4 py-1.5 rounded-lg">Filter</button>
+        {(q || from || to) && (
+          <Link href={status ? `/admin/orders?status=${status}` : '/admin/orders'} className="text-sm text-gray-400 hover:text-white px-2 py-1.5">Clear</Link>
+        )}
+      </form>
+
       {/* Pipeline filter */}
       <div className="flex flex-wrap gap-2 mb-6">
-        <Link
-          href="/admin/orders"
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${!status ? 'bg-saffron-500 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
-        >
-          All
-        </Link>
+        <Link href={qsFor('')} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${!status ? 'bg-saffron-500 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>All</Link>
         {STATUS_PIPELINE.map((s) => (
-          <Link
-            key={s}
-            href={`/admin/orders?status=${s}`}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition ${status === s ? 'bg-saffron-500 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
-          >
+          <Link key={s} href={qsFor(s)} className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition ${status === s ? 'bg-saffron-500 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
             {s.replace(/_/g, ' ')}
           </Link>
         ))}
       </div>
 
-      {/* Table */}
-      <div className="bg-gray-900 rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-800 text-gray-400 text-xs">
-              <th className="text-left p-4">Order</th>
-              <th className="text-left p-4">Customer</th>
-              <th className="text-left p-4">Items</th>
-              <th className="text-left p-4">Total</th>
-              <th className="text-left p-4">Status</th>
-              <th className="text-left p-4">Date</th>
-              <th className="text-left p-4">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-800">
-            {orders?.map((order: any) => (
-              <tr key={order.id} className="hover:bg-gray-800/50 transition">
-                <td className="p-4">
-                  <Link href={`/admin/orders/${order.id}`} className="font-mono text-xs text-saffron-400 hover:underline">
-                    #{order.order_number}
-                  </Link>
-                </td>
-                <td className="p-4 text-gray-300 text-xs">{order.guest_email ?? order.user_id?.slice(0, 8) + '...'}</td>
-                <td className="p-4 text-gray-400 text-xs">{order.items?.length ?? 0} items</td>
-                <td className="p-4 font-medium">{formatCurrency(order.total_eur)}</td>
-                <td className="p-4">
-                  <span className="text-xs bg-gray-700 px-2 py-1 rounded capitalize">
-                    {order.status.replace(/_/g, ' ')}
-                  </span>
-                </td>
-                <td className="p-4 text-gray-400 text-xs">
-                  {format(new Date(order.created_at), 'dd MMM HH:mm')}
-                </td>
-                <td className="p-4">
-                  <AdminOrderActions
-                    orderId={order.id}
-                    currentStatus={order.status}
-                    total={order.total_eur}
-                    paymentIntentId={order.stripe_payment_intent_id}
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <OrdersTable orders={(orders as any) ?? []} />
     </div>
   )
 }
