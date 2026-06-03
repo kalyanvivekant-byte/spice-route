@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient, createClient } from '@/lib/supabase/server'
-import { createParcelWithLabel, getParcelStatus, sendcloudConfigured } from '@/lib/shipping/sendcloud'
+import { createShipment, getParcelStatus, sendcloudConfigured } from '@/lib/shipping/sendcloud'
 import { sendOrderDispatched } from '@/lib/email/resend'
 
 async function requireAdmin() {
@@ -19,8 +19,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Sendcloud is not configured. Add SENDCLOUD_PUBLIC_KEY and SENDCLOUD_SECRET_KEY.' }, { status: 400 })
   }
 
-  const { orderId, shippingMethodId, methodName, weightGrams } = await request.json()
-  if (!orderId || !shippingMethodId) return NextResponse.json({ error: 'Missing order or shipping method' }, { status: 400 })
+  const { orderId, shippingOptionCode, methodName, weightGrams } = await request.json()
+  if (!orderId || !shippingOptionCode) return NextResponse.json({ error: 'Missing order or shipping method' }, { status: 400 })
 
   const supabase = createAdminClient()
   const { data: order } = await supabase.from('orders').select('*').eq('id', orderId).single()
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
   let parcel
   try {
-    parcel = await createParcelWithLabel({
+    parcel = await createShipment({
       name: `${addr.first_name ?? ''} ${addr.last_name ?? ''}`.trim() || 'Customer',
       address: addr.street_line1,
       houseNumber: addr.house_number ?? '',
@@ -47,12 +47,13 @@ export async function POST(request: NextRequest) {
       telephone: addr.phone ?? '',
       orderNumber: order.order_number,
       weightGrams: Number(weightGrams) || 1000,
-      shippingMethodId: Number(shippingMethodId),
+      shippingOptionCode: String(shippingOptionCode),
     })
   } catch (e: any) {
     return NextResponse.json({ error: e.message ?? 'Label creation failed' }, { status: 500 })
   }
 
+  const labelUrl = parcel.parcelId ? `/api/admin/shipments/label?parcel=${parcel.parcelId}` : null
   const { data: shipment, error } = await supabase
     .from('shipments')
     .insert({
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
       method_name: parcel.methodName ?? methodName ?? null,
       tracking_number: parcel.trackingNumber,
       tracking_url: parcel.trackingUrl,
-      label_url: parcel.labelUrl,
+      label_url: labelUrl,
       status: parcel.status,
       weight_grams: Number(weightGrams) || 1000,
       created_by: admin.id,

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Truck } from 'lucide-react'
 import { formatCurrency } from '@/lib/vat'
 
-type Method = { id: number; name: string; carrier: string; price: number | null }
+type Method = { id: string; name: string; carrier: string; price: number | null }
 
 // Informational: shows which carriers can deliver to the chosen country.
 // (Delivery price is still set by your zone rules; this is for transparency.)

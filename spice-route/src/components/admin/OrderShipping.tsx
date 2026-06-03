@@ -16,7 +16,7 @@ type Shipment = {
   status: string | null
   weight_grams: number | null
 }
-type Method = { id: number; name: string; carrier: string; price: number | null }
+type Method = { id: string; name: string; carrier: string; price: number | null }
 
 export function OrderShipping({
   orderId, countryCode, canShip, sendcloudReady, shipment,
@@ -30,7 +30,7 @@ export function OrderShipping({
   const router = useRouter()
   const [weight, setWeight] = useState('1000')
   const [methods, setMethods] = useState<Method[] | null>(null)
-  const [selected, setSelected] = useState<number | null>(null)
+  const [selected, setSelected] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   async function loadRates() {
@@ -53,7 +53,7 @@ export function OrderShipping({
     const res = await fetch('/api/admin/shipments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orderId, shippingMethodId: selected, methodName: method?.name, weightGrams: Number(weight) }),
+      body: JSON.stringify({ orderId, shippingOptionCode: selected, methodName: method?.name, weightGrams: Number(weight) }),
     })
     const data = await res.json()
     setLoading(false)
