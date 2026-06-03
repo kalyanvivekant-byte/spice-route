@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/server'
+import { NotificationTester } from '@/components/admin/NotificationTester'
 
 export default async function AdminSettingsPage() {
   const supabase = createAdminClient()
@@ -60,6 +61,12 @@ export default async function AdminSettingsPage() {
         <p className="text-xs text-gray-500 mt-2">
           Manage these values as environment variables in your hosting provider.
         </p>
+      </section>
+
+      <section>
+        <h2 className="font-semibold mb-3">Test email &amp; SMS</h2>
+        <p className="text-xs text-gray-500 mb-3">Sends a real test and shows the provider’s exact response — use this to diagnose delivery issues.</p>
+        <NotificationTester />
       </section>
     </div>
   )
