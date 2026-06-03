@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { MapPin, Clock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { ShippingOptions } from '@/components/checkout/ShippingOptions'
 
 const schema = z.object({
   firstName: z.string().min(1, 'Required'),
@@ -88,6 +89,7 @@ export function DeliveryStep({ user, onComplete }: Props) {
   })
 
   const deliveryType = watch('deliveryType')
+  const country = watch('countryCode')
 
   function submit(data: FormData) {
     const selected = slots.find((s) => s.id === data.slotId)
@@ -176,6 +178,7 @@ export function DeliveryStep({ user, onComplete }: Props) {
                   <option key={c.code} value={c.code}>{c.name}</option>
                 ))}
               </select>
+              <ShippingOptions country={country} />
             </div>
           </div>
         </div>
